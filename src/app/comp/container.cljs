@@ -8,26 +8,36 @@
             [respo.comp.space :refer [=<]]
             [reel.comp.reel :refer [comp-reel]]
             [respo-md.comp.md :refer [comp-md]]
-            [app.config :refer [dev?]]))
+            [app.config :refer [dev?]]
+            [app.comp.viewer :refer [comp-viewer]]
+            [app.comp.editor :refer [comp-editor]]))
+
+(defn render-entry [title code current-code]
+  (div
+   {:on-click (fn [e d! m!] (d! :page code)),
+    :style (merge
+            {:padding "0 8px",
+             :margin "0 8px",
+             :cursor :pointer,
+             :color (hsl 0 0 70),
+             :font-size 16,
+             :font-family ui/font-fancy}
+            (if (= code current-code) {:color (hsl 0 0 30)}))}
+   (<> title)))
 
 (defcomp
  comp-container
  (reel)
  (let [store (:store reel), states (:states store)]
    (div
-    {:style (merge ui/global ui/row)}
-    (textarea
-     {:value (:content store),
-      :placeholder "Content",
-      :style (merge ui/expand ui/textarea {:height 320}),
-      :on-input (action-> :content (:value %e))})
-    (=< "8px" nil)
+    {:style (merge ui/global ui/column)}
     (div
-     {:style ui/expand}
-     (comp-md "This is some content with `code`")
-     (=< "8px" nil)
-     (button
-      {:style ui/button,
-       :inner-text (str "run"),
-       :on-click (fn [e d! m!] (println (:content store)))}))
+     {:style (merge ui/row-middle {:border-bottom (str "1px solid " (hsl 0 0 90))})}
+     (render-entry "Home" :home (:page store))
+     (render-entry "Editor" :editor (:page store)))
+    (case (:page store)
+      :home (comp-viewer)
+      :editor (comp-editor)
+      nil (comp-viewer)
+      (div {} (<> (str "Else" (:page store)))))
     (when dev? (cursor-> :reel comp-reel states reel {})))))
