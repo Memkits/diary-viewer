@@ -22,7 +22,8 @@
                    :output-dir "target/"
                    :asset-path "./"
                    :modules {:client {:init-fn app.main/main!}}
-                   :devtools {:after-load app.main/reload!}
+                   :devtools {:after-load app.main/reload!
+                              :loder-mode :script}
                    :compiler-options {:infer-externs :auto}
                    :release {:output-dir "dist/"
                              :module-hash-names 8
