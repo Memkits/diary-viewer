@@ -7,6 +7,7 @@
              [defcomp cursor-> action-> mutation-> <> div button textarea span input]]
             [respo.comp.space :refer [=<]]
             [reel.comp.reel :refer [comp-reel]]
+            [respo.comp.inspect :refer [comp-inspect]]
             [respo-md.comp.md :refer [comp-md]]
             [app.config :refer [dev?]]
             [app.comp.viewer :refer [comp-viewer]]
@@ -35,9 +36,9 @@
      {:style (merge ui/row-middle {:border-bottom (str "1px solid " (hsl 0 0 90))})}
      (render-entry "Home" :home (:page store))
      (render-entry "Editor" :editor (:page store)))
-    (case (:page store)
-      :home (comp-viewer)
-      :editor (comp-editor)
-      nil (comp-viewer)
+    (case (or (:page store) :home)
+      :home (cursor-> :viewer comp-viewer states (:records store))
+      :editor (cursor-> :editor comp-editor states (:records store))
       (div {} (<> (str "Else" (:page store)))))
-    (when dev? (cursor-> :reel comp-reel states reel {})))))
+    (when dev? (cursor-> :reel comp-reel states reel {}))
+    (when dev? (comp-inspect "store" store {:bottom 0})))))

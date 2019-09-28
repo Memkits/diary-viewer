@@ -4,7 +4,7 @@
 (defn updater [store op op-data op-id op-time]
   (case op
     :states (update store :states (mutate op-data))
-    :content (assoc store :content op-data)
+    :records (assoc store :records op-data)
     :page (assoc store :page op-data)
     :hydrate-storage op-data
     store))
