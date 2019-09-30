@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "feather-icons": "^4.24.1",
+    "luxon": "^1.19.3",
     "shortid": "^2.2.15"
   }
 }
