@@ -14,14 +14,14 @@
             [respo.util.list :refer [map-val]]))
 
 (def style-tag
-  {:background-color (hsl 200 80 70),
+  {:background-color (hsl 200 80 85),
    :padding "0 8px",
    :margin "0 8px",
    :border-radius "4px",
    :color :white,
    :cursor :pointer})
 
-(def tags [:food :mood :place :met])
+(def tags [:food :mood :place :met :highlight :exercise])
 
 (defcomp
  comp-viewer
@@ -42,7 +42,9 @@
              (fn [tag]
                [tag
                 (span
-                 {:style style-tag,
+                 {:style (merge
+                          style-tag
+                          (if (= tag (:tag state)) {:background-color (hsl 200 80 70)})),
                   :inner-text tag,
                   :on-click (fn [e d! m!] (m! (assoc state :tag tag)))})])))))
      (if (= :food (:tag state))
@@ -58,7 +60,10 @@
           (group-by
            (fn [info]
              (let [time (.fromISO DateTime (:date info))]
-               (str (j/get time :year) "-" (.floor js/Math (/ (j/get time :ordinal) 7))))))
+               (str
+                (j/get time :year)
+                "-"
+                (-> (/ (j/get time :ordinal) 7) (js/Math.floor) (str) (.padStart 2 "0"))))))
           (sort-by (fn [[k result]] k))
           (map-val
            (fn [days-info]
