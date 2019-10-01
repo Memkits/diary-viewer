@@ -11,7 +11,8 @@
             [respo-md.comp.md :refer [comp-md]]
             [app.config :refer [dev?]]
             [app.comp.viewer :refer [comp-viewer]]
-            [app.comp.editor :refer [comp-editor]]))
+            [app.comp.editor :refer [comp-editor]]
+            [app.comp.food-analysis :refer [comp-food-analysis]]))
 
 (defn render-entry [title code current-code]
   (div
@@ -39,6 +40,7 @@
     (case (or (:page store) :home)
       :home (cursor-> :viewer comp-viewer states (:records store))
       :editor (cursor-> :editor comp-editor states (:records store))
+      :food-analysis (comp-food-analysis (:records store))
       (div {} (<> (str "Else" (:page store)))))
     (when dev? (cursor-> :reel comp-reel states reel {}))
     (when dev? (comp-inspect "store" store {:bottom 0})))))
