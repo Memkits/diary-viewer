@@ -31,7 +31,7 @@
  (reel)
  (let [store (:store reel), states (:states store)]
    (div
-    {:style (merge ui/global ui/column)}
+    {:style (merge ui/global ui/fullscreen ui/column)}
     (div
      {:style (merge ui/row-middle {:border-bottom (str "1px solid " (hsl 0 0 90))})}
      (render-entry "Home" :home (:page store))
