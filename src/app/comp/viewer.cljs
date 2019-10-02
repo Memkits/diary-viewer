@@ -14,14 +14,14 @@
             [respo.util.list :refer [map-val]]))
 
 (def style-tag
-  {:background-color (hsl 200 80 70),
+  {:background-color (hsl 200 80 85),
    :padding "0 8px",
    :margin "0 8px",
    :border-radius "4px",
    :color :white,
    :cursor :pointer})
 
-(def tags [:food :mood :place :met])
+(def tags [:food :mood :place :met :highlight :exercise])
 
 (defcomp
  comp-viewer
@@ -30,40 +30,48 @@
    (div
     {:style (merge ui/expand ui/column {:padding 16})}
     (div
-     {:style (merge
-              ui/row-middle
-              {:padding-bottom 16, :border-bottom (str "1px solid " (hsl 0 0 80))})}
-     (<> "Filters")
-     (=< 16 nil)
-     (list->
-      {:style ui/row-middle}
-      (->> tags
-           (map
-            (fn [tag]
-              [tag
-               (span
-                {:style style-tag,
-                 :inner-text tag,
-                 :on-click (fn [e d! m!] (m! (assoc state :tag tag)))})])))))
+     {:style (merge ui/row-parted {:padding-bottom 12})}
+     (div
+      {:style (merge ui/row-middle)}
+      (<> "Filters")
+      (=< 16 nil)
+      (list->
+       {:style ui/row-middle}
+       (->> tags
+            (map
+             (fn [tag]
+               [tag
+                (span
+                 {:style (merge
+                          style-tag
+                          (if (= tag (:tag state)) {:background-color (hsl 200 80 70)})),
+                  :inner-text tag,
+                  :on-click (fn [e d! m!] (m! (assoc state :tag tag)))})])))))
+     (if (= :food (:tag state))
+       (button
+        {:style ui/button,
+         :inner-text "Group",
+         :on-click (fn [e d! m!] (d! :page :food-analysis))})))
     (list->
-     {:style (merge ui/expand)}
+     {:style (merge ui/expand {:border-top (str "1px solid " (hsl 0 0 80))})}
      (->> records
           (map last)
           (filter (fn [info] (some? (get info (:tag state)))))
           (group-by
            (fn [info]
              (let [time (.fromISO DateTime (:date info))]
-               (str (j/get time :year) "-" (.floor js/Math (/ (j/get time :ordinal) 7))))))
+               (str
+                (j/get time :year)
+                "-"
+                (-> (/ (j/get time :ordinal) 7) (js/Math.floor) (str) (.padStart 2 "0"))))))
           (sort-by (fn [[k result]] k))
           (map-val
            (fn [days-info]
              (div
               {:style {:padding-top 8}}
               (div
-               {}
-               (<>
-                (:date (first (->> days-info (sort-by :date))))
-                {:font-family ui/font-fancy}))
+               {:style {:font-family ui/font-fancy},
+                :inner-text (:date (first (->> days-info (sort-by :date))))})
               (list->
                {:style (merge ui/row {})}
                (->> days-info
@@ -71,24 +79,25 @@
                     (map (fn [info] [(:date info) info]))
                     (map-val
                      (fn [info]
-                       (div
-                        {:style (merge
-                                 ui/expand
-                                 {:border-left (str "1px solid " (hsl 0 0 80)),
-                                  :padding "8px"}),
-                         :title (str
-                                 (:date info)
-                                 " "
-                                 (-> DateTime (.fromISO (:date info)) (.toFormat "EEE")))}
-                        (let [content (get info (:tag state))]
-                          (if (some? content)
-                            (div
-                             {}
-                             (<>
-                              (-> DateTime (.fromISO (:date info)) (.toFormat "EEE"))
-                              {:color (hsl 0 0 80),
-                               :margin 8,
-                               :font-size 12,
-                               :font-family ui/font-fancy})
-                             (<> content))
-                            (<> "nothing" {:color (hsl 0 0 80), :font-family ui/font-fancy}))))))))))))))))
+                       (let [content (get info (:tag state))]
+                         (if (some? content)
+                           (div
+                            {:style (merge
+                                     ui/expand
+                                     {:border-left (str "1px solid " (hsl 0 0 80)),
+                                      :padding "8px"})}
+                            (<>
+                             (-> DateTime (.fromISO (:date info)) (.toFormat "EEE"))
+                             {:color (hsl 0 0 80),
+                              :margin 8,
+                              :font-size 12,
+                              :font-family ui/font-fancy})
+                            (<> content))
+                           (<>
+                            "nothing"
+                            (merge
+                             ui/expand
+                             {:border-left (str "1px solid " (hsl 0 0 80)),
+                              :padding "8px",
+                              :color (hsl 0 0 80),
+                              :font-family ui/font-fancy}))))))))))))))))
