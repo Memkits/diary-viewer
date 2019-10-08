@@ -1,5 +1,5 @@
 
-(ns app.comp.food-analysis
+(ns app.comp.place-analysis
   (:require [hsl.core :refer [hsl]]
             [respo-ui.core :as ui]
             [respo.core
@@ -16,23 +16,23 @@
             [app.util.string :refer [split-words]]))
 
 (defcomp
- comp-food-analysis
+ comp-place-analysis
  (records)
- (let [foods (as->
-              records
-              data
-              (vals data)
-              (map :food data)
-              (mapcat (fn [chunk] (split-words [] "" chunk)) data)
-              (filter (fn [x] (not (string/blank? x))) data)
-              (frequencies data))]
+ (let [records (as->
+                records
+                data
+                (vals data)
+                (map :place data)
+                (mapcat (fn [chunk] (split-words [] "" chunk)) data)
+                (filter (fn [x] (not (string/blank? x))) data)
+                (frequencies data))]
    (list->
-    {:style (merge ui/expand {:padding 16, :column-count 10})}
-    (->> foods
-         (sort-by (fn [[food times]] (unchecked-negate times)))
+    {:style (merge ui/expand {:padding 16, :column-count 6})}
+    (->> records
+         (sort-by (fn [[record times]] (unchecked-negate times)))
          (map
-          (fn [[food times]]
-            [food
+          (fn [[record times]]
+            [record
              (div
               {:style {:padding "0 8px", :line-height 1.5}}
               (<>
@@ -41,4 +41,4 @@
                 :font-family ui/font-code,
                 :font-size 10,
                 :color (hsl 0 0 70)})
-              (<> food {:font-size 12, :white-space :nowrap}))]))))))
+              (<> record {:font-size 12, :white-space :nowrap}))]))))))

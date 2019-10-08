@@ -51,7 +51,12 @@
        (button
         {:style ui/button,
          :inner-text "Group",
-         :on-click (fn [e d! m!] (d! :page :food-analysis))})))
+         :on-click (fn [e d! m!] (d! :page :food-analysis))}))
+     (if (= :place (:tag state))
+       (button
+        {:style ui/button,
+         :inner-text "Group",
+         :on-click (fn [e d! m!] (d! :page :place-analysis))})))
     (list->
      {:style (merge ui/expand {:border-top (str "1px solid " (hsl 0 0 80))})}
      (->> records
