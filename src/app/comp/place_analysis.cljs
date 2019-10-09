@@ -13,7 +13,7 @@
             [applied-science.js-interop :as j]
             [respo.util.list :refer [map-val]]
             [clojure.string :as string]
-            [app.util.string :refer [split-words]]))
+            [app.util.string :refer [split-words-comma]]))
 
 (defcomp
  comp-place-analysis
@@ -23,7 +23,7 @@
                 data
                 (vals data)
                 (map :place data)
-                (mapcat (fn [chunk] (split-words [] "" chunk)) data)
+                (mapcat (fn [chunk] (split-words-comma [] "" chunk)) data)
                 (filter (fn [x] (not (string/blank? x))) data)
                 (frequencies data))]
    (list->
