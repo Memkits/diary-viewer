@@ -4,7 +4,7 @@
             [respo-ui.core :as ui]
             [respo.core
              :refer
-             [defcomp cursor-> action-> list-> <> div button textarea span input]]
+             [defcomp cursor-> action-> list-> <> div button textarea span input a]]
             [respo.comp.space :refer [=<]]
             [reel.comp.reel :refer [comp-reel]]
             [respo-md.comp.md :refer [comp-md]]
@@ -12,6 +12,29 @@
             ["luxon" :refer [DateTime]]
             [applied-science.js-interop :as j]
             [respo.util.list :refer [map-val]]))
+
+(defcomp
+ comp-filter-buttons
+ (tag)
+ (let [new-page (case tag :food :food-analysis :place :place-analysis (do nil))]
+   (div
+    {:style ui/row-middle}
+    (a
+     {:style ui/link,
+      :inner-text "Group",
+      :on-click (fn [e d! m!] (d! :router {:name new-page}))})
+    (a
+     {:style ui/link,
+      :inner-text "Group 2020",
+      :on-click (fn [e d! m!] (d! :router {:name new-page, :data 2020}))})
+    (a
+     {:style ui/link,
+      :inner-text "Group 2019",
+      :on-click (fn [e d! m!] (d! :router {:name new-page, :data 2019}))})
+    (a
+     {:style ui/link,
+      :inner-text "Group 2018",
+      :on-click (fn [e d! m!] (d! :router {:name new-page, :data 2018}))}))))
 
 (def style-tag
   {:background-color (hsl 200 80 85),
@@ -47,16 +70,7 @@
                           (if (= tag (:tag state)) {:background-color (hsl 200 80 70)})),
                   :inner-text tag,
                   :on-click (fn [e d! m!] (m! (assoc state :tag tag)))})])))))
-     (if (= :food (:tag state))
-       (button
-        {:style ui/button,
-         :inner-text "Group",
-         :on-click (fn [e d! m!] (d! :page :food-analysis))}))
-     (if (= :place (:tag state))
-       (button
-        {:style ui/button,
-         :inner-text "Group",
-         :on-click (fn [e d! m!] (d! :page :place-analysis))})))
+     (comp-filter-buttons (:tag state)))
     (list->
      {:style (merge ui/expand {:border-top (str "1px solid " (hsl 0 0 80))})}
      (->> records

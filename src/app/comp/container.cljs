@@ -15,9 +15,9 @@
             [app.comp.food-analysis :refer [comp-food-analysis]]
             [app.comp.place-analysis :refer [comp-place-analysis]]))
 
-(defn render-entry [title code current-code]
+(defn render-entry [title code router]
   (div
-   {:on-click (fn [e d! m!] (d! :page code)),
+   {:on-click (fn [e d! m!] (d! :router {:name code, :data nil})),
     :style (merge
             {:padding "0 8px",
              :margin "0 8px",
@@ -25,24 +25,24 @@
              :color (hsl 0 0 70),
              :font-size 16,
              :font-family ui/font-fancy}
-            (if (= code current-code) {:color (hsl 0 0 30)}))}
+            (if (= code (:name router)) {:color (hsl 0 0 30)}))}
    (<> title)))
 
 (defcomp
  comp-container
  (reel)
- (let [store (:store reel), states (:states store)]
+ (let [store (:store reel), states (:states store), router (:router store)]
    (div
     {:style (merge ui/global ui/fullscreen ui/column)}
     (div
      {:style (merge ui/row-middle {:border-bottom (str "1px solid " (hsl 0 0 90))})}
-     (render-entry "Home" :home (:page store))
-     (render-entry "Editor" :editor (:page store)))
-    (case (or (:page store) :home)
+     (render-entry "Home" :home router)
+     (render-entry "Editor" :editor router))
+    (case (or (:name router) :home)
       :home (cursor-> :viewer comp-viewer states (:records store))
       :editor (cursor-> :editor comp-editor states (:records store))
-      :food-analysis (comp-food-analysis (:records store))
-      :place-analysis (comp-place-analysis (:records store))
+      :food-analysis (comp-food-analysis (:records store) router)
+      :place-analysis (comp-place-analysis (:records store) router)
       (div {} (<> (str "Else" (:page store)))))
     (when dev? (cursor-> :reel comp-reel states reel {}))
     (when dev? (comp-inspect "store" store {:bottom 0})))))

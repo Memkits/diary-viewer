@@ -5,6 +5,6 @@
   (case op
     :states (update store :states (mutate op-data))
     :records (assoc store :records op-data)
-    :page (assoc store :page op-data)
+    :router (assoc store :router op-data)
     :hydrate-storage op-data
     store))

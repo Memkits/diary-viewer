@@ -17,10 +17,17 @@
  (states records)
  (let [state (or (:data states) {:text (pr-str records)})]
    (div
-    {:style {:padding 16}}
+    {:style (merge ui/expand {:padding 16})}
     (textarea
-     {:style (merge ui/textarea {:width 800, :height 400, :font-family ui/font-code}),
+     {:style (merge
+              ui/textarea
+              {:width "100%",
+               :height "80%",
+               :font-family ui/font-code,
+               :font-size 12,
+               :padding-bottom 200}),
       :value (:text state),
+      :placeholder "EDN piece of diaries storage, keys are dates",
       :on-input (fn [e d! m!] (m! (assoc state :text (:value e))))})
     (div
      {:style {:padding "16px 0"}}
@@ -30,4 +37,4 @@
        :on-click (fn [e d! m!]
          (d! :records (read-string (:text state)))
          (m! nil)
-         (d! :page :home))})))))
+         (d! :router {:name :home}))})))))
