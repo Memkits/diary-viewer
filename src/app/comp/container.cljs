@@ -2,9 +2,7 @@
 (ns app.comp.container
   (:require [hsl.core :refer [hsl]]
             [respo-ui.core :as ui]
-            [respo.core
-             :refer
-             [defcomp cursor-> action-> mutation-> <> div button textarea span input]]
+            [respo.core :refer [defcomp >> <> div button textarea span input]]
             [respo.comp.space :refer [=<]]
             [reel.comp.reel :refer [comp-reel]]
             [respo.comp.inspect :refer [comp-inspect]]
@@ -39,10 +37,10 @@
      (render-entry "Home" :home router)
      (render-entry "Editor" :editor router))
     (case (or (:name router) :home)
-      :home (cursor-> :viewer comp-viewer states (:records store))
-      :editor (cursor-> :editor comp-editor states (:records store))
+      :home (comp-viewer (>> states :viewer) (:records store))
+      :editor (comp-editor (>> states :editor) (:records store))
       :food-analysis (comp-food-analysis (:records store) router)
       :place-analysis (comp-place-analysis (:records store) router)
       (div {} (<> (str "Else" (:page store)))))
-    (when dev? (cursor-> :reel comp-reel states reel {}))
+    (when dev? (comp-reel (>> states :reel) reel {}))
     (when dev? (comp-inspect "store" store {:bottom 0})))))

@@ -2,9 +2,7 @@
 (ns app.comp.food-analysis
   (:require [hsl.core :refer [hsl]]
             [respo-ui.core :as ui]
-            [respo.core
-             :refer
-             [defcomp cursor-> action-> list-> <> div button textarea span input]]
+            [respo.core :refer [defcomp >> list-> <> div button textarea span input]]
             [respo.comp.space :refer [=<]]
             [reel.comp.reel :refer [comp-reel]]
             [respo-md.comp.md :refer [comp-md]]
@@ -22,7 +20,7 @@
  (let [foods (as->
               records
               data
-              (vals data)
+              (map last data)
               (filter
                (fn [day-info]
                  (if (some? (:data router))
