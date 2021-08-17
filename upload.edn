@@ -1,6 +1,0 @@
-
-{:host "tiye.me"
- :uploads [{:from "dist/*"
-            :to "cdn/diary-viewer/"}
-           {:from "dist/{index.html,manifest.json}"
-            :to "repo/Memkits/diary-viewer/"}]}
