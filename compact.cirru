@@ -1,61 +1,10 @@
 
 {} (:package |app)
-  :configs $ {} (:init-fn |app.main/main!) (:reload-fn |app.main/reload!)
+  :configs $ {} (:init-fn |app.main/main!) (:reload-fn |app.main/reload!) (:version |0.0.1)
     :modules $ [] |respo.calcit/ |lilac/ |memof/ |respo-ui.calcit/ |respo-markdown.calcit/ |reel.calcit/ |respo-feather.calcit/
-    :version |0.0.1
+  :entries $ {}
   :files $ {}
-    |app.comp.editor $ {}
-      :ns $ quote
-        ns app.comp.editor $ :require
-          [] hsl.core :refer $ [] hsl
-          [] respo-ui.core :as ui
-          [] respo.core :refer $ [] defcomp >> <> div button textarea span input
-          [] respo.comp.space :refer $ [] =<
-          [] reel.comp.reel :refer $ [] comp-reel
-          [] respo-md.comp.md :refer $ [] comp-md
-          [] app.config :refer $ [] dev?
-          [] clojure.string :as string
-          [] cljs.reader :refer $ [] read-string
-      :defs $ {}
-        |comp-editor $ quote
-          defcomp comp-editor (states records)
-            let
-                cursor $ :cursor states
-                state $ or (:data states)
-                  {} $ :text (pr-str records)
-              div
-                {} $ :style
-                  merge ui/expand $ {} (:padding 16)
-                textarea $ {}
-                  :style $ merge ui/textarea
-                    {} (:width "\"100%") (:height "\"80%") (:font-family ui/font-code) (:font-size 12) (:padding-bottom 200)
-                  :value $ :text state
-                  :placeholder "\"EDN piece of diaries storage, keys are dates"
-                  :on-input $ fn (e d!)
-                    d! cursor $ assoc state :text (:value e)
-                div
-                  {} $ :style
-                    {} $ :padding "\"16px 0"
-                  button $ {} (:style ui/button) (:inner-text "\"Analyze")
-                    :on-click $ fn (e d!)
-                      d! :records $ parse-cirru-edn (:text state)
-                      d! cursor nil
-                      d! :router $ {} (:name :home)
     |app.comp.container $ {}
-      :ns $ quote
-        ns app.comp.container $ :require
-          [] respo-ui.core :refer $ [] hsl
-          [] respo-ui.core :as ui
-          [] respo.core :refer $ [] defcomp >> <> div button textarea span input
-          [] respo.comp.space :refer $ [] =<
-          [] reel.comp.reel :refer $ [] comp-reel
-          [] respo.comp.inspect :refer $ [] comp-inspect
-          [] respo-md.comp.md :refer $ [] comp-md
-          [] app.config :refer $ [] dev?
-          [] app.comp.viewer :refer $ [] comp-viewer
-          [] app.comp.editor :refer $ [] comp-editor
-          [] app.comp.food-analysis :refer $ [] comp-food-analysis
-          [] app.comp.place-analysis :refer $ [] comp-place-analysis
       :defs $ {}
         |comp-container $ quote
           defcomp comp-container (reel)
@@ -97,20 +46,103 @@
                     = code $ :name router
                     {} $ :color (hsl 0 0 30)
               <> title
-    |app.schema $ {}
-      :ns $ quote (ns app.schema)
-      :defs $ {}
-        |store $ quote
-          def store $ {}
-            :states $ {}
-            :records $ {}
-            :router $ {} (:name :home) (:data nil)
-    |app.comp.viewer $ {}
       :ns $ quote
-        ns app.comp.viewer $ :require
+        ns app.comp.container $ :require
           [] respo-ui.core :refer $ [] hsl
           [] respo-ui.core :as ui
-          [] respo.core :refer $ [] defcomp >> list-> <> div button textarea span input a
+          [] respo.core :refer $ [] defcomp >> <> div button textarea span input
+          [] respo.comp.space :refer $ [] =<
+          [] reel.comp.reel :refer $ [] comp-reel
+          [] respo.comp.inspect :refer $ [] comp-inspect
+          [] respo-md.comp.md :refer $ [] comp-md
+          [] app.config :refer $ [] dev?
+          [] app.comp.viewer :refer $ [] comp-viewer
+          [] app.comp.editor :refer $ [] comp-editor
+          [] app.comp.food-analysis :refer $ [] comp-food-analysis
+          [] app.comp.place-analysis :refer $ [] comp-place-analysis
+    |app.comp.editor $ {}
+      :defs $ {}
+        |comp-editor $ quote
+          defcomp comp-editor (states records)
+            let
+                cursor $ :cursor states
+                state $ or (:data states)
+                  {} $ :text (pr-str records)
+              div
+                {} $ :style
+                  merge ui/expand $ {} (:padding 16)
+                textarea $ {}
+                  :style $ merge ui/textarea
+                    {} (:width "\"100%") (:height "\"80%") (:font-family ui/font-code) (:font-size 12) (:padding-bottom 200)
+                  :value $ :text state
+                  :placeholder "\"EDN piece of diaries storage, keys are dates"
+                  :on-input $ fn (e d!)
+                    d! cursor $ assoc state :text (:value e)
+                div
+                  {} $ :style
+                    {} $ :padding "\"16px 0"
+                  button $ {} (:style ui/button) (:inner-text "\"Analyze")
+                    :on-click $ fn (e d!)
+                      d! :records $ parse-cirru-edn (:text state)
+                      d! cursor nil
+                      d! :router $ {} (:name :home)
+      :ns $ quote
+        ns app.comp.editor $ :require
+          [] hsl.core :refer $ [] hsl
+          [] respo-ui.core :as ui
+          [] respo.core :refer $ [] defcomp >> <> div button textarea span input
+          [] respo.comp.space :refer $ [] =<
+          [] reel.comp.reel :refer $ [] comp-reel
+          [] respo-md.comp.md :refer $ [] comp-md
+          [] app.config :refer $ [] dev?
+          [] clojure.string :as string
+          [] cljs.reader :refer $ [] read-string
+    |app.comp.food-analysis $ {}
+      :defs $ {}
+        |comp-food-analysis $ quote
+          defcomp comp-food-analysis (records router)
+            let
+                foods $ -> records (.to-list) (map last)
+                  filter $ fn (day-info)
+                    if
+                      some? $ :data router
+                      = (:data router)
+                        get-year $ :time day-info
+                      , true
+                  map $ fn (x)
+                    or (get x :food) "\""
+                  mapcat $ fn (chunk)
+                    split-words ([]) "\"" chunk
+                  filter $ fn (x)
+                    not $ .blank? x
+                  .frequencies 
+              div
+                {} $ :style
+                  merge ui/expand ui/column $ {} (:padding "\"8px 16px")
+                div
+                  {} $ :style ({})
+                  <>
+                    str "\"Foods of " $ or (:data router) "\"all"
+                    {} $ :font-family ui/font-fancy
+                list->
+                  {} $ :style
+                    merge ui/expand $ {} (:column-count 10)
+                  -> foods (.to-list)
+                    .sort-by $ fn (pair)
+                      negate $ last pair
+                    map $ fn (pair)
+                      let[] (food times) pair $ [] food
+                        div
+                          {} $ :style
+                            {} (:padding "\"0 8px") (:line-height 1.5)
+                          <> times $ {} (:margin-right 8) (:font-family ui/font-code) (:font-size 10)
+                            :color $ hsl 0 0 70
+                          <> food $ {} (:font-size 12) (:white-space :nowrap)
+      :ns $ quote
+        ns app.comp.food-analysis $ :require
+          [] respo-ui.core :refer $ [] hsl
+          [] respo-ui.core :as ui
+          [] respo.core :refer $ [] defcomp >> list-> <> div button textarea span input
           [] respo.comp.space :refer $ [] =<
           [] reel.comp.reel :refer $ [] comp-reel
           [] respo-md.comp.md :refer $ [] comp-md
@@ -118,6 +150,65 @@
           [] "\"luxon" :refer $ [] DateTime
           [] applied-science.js-interop :as j
           [] respo.util.list :refer $ [] map-val
+          [] clojure.string :as string
+          [] app.util.string :refer $ [] split-words
+          [] app.util :refer $ [] get-year
+    |app.comp.place-analysis $ {}
+      :defs $ {}
+        |comp-place-analysis $ quote
+          defcomp comp-place-analysis (records router)
+            let
+                records $ -> records (map last)
+                  filter $ fn (day-info)
+                    if
+                      some? $ :data router
+                      = (:data router)
+                        get-year $ :time day-info
+                      , true
+                  map $ fn (x) (:place x)
+                  mapcat $ fn (chunk)
+                    split-words-comma ([]) "\"" chunk
+                  filter $ fn (x)
+                    not $ .blank? x
+                  frequencies
+              div
+                {} $ :style
+                  merge ui/expand ui/column $ {} (:padding "\"8px 16px")
+                div
+                  {} $ :style ({})
+                  <>
+                    str "\"Places of " $ or (:data router) "\"all"
+                    {} $ :font-family ui/font-fancy
+                list->
+                  {} $ :style
+                    merge ui/expand $ {} (:column-count 6)
+                  -> records
+                    .sort-by $ fn (pair)
+                      negate $ last pair
+                    map $ fn (pair)
+                      let[] (record times) pair $ [] record
+                        div
+                          {} $ :style
+                            {} (:padding "\"0 8px") (:line-height 1.5)
+                          <> times $ {} (:margin-right 8) (:font-family ui/font-code) (:font-size 10)
+                            :color $ hsl 0 0 70
+                          <> record $ {} (:font-size 12) (:white-space :nowrap)
+      :ns $ quote
+        ns app.comp.place-analysis $ :require
+          [] respo-ui.core :refer $ [] hsl
+          [] respo-ui.core :as ui
+          [] respo.core :refer $ [] defcomp >> list-> <> div button textarea span input
+          [] respo.comp.space :refer $ [] =<
+          [] reel.comp.reel :refer $ [] comp-reel
+          [] respo-md.comp.md :refer $ [] comp-md
+          [] app.config :refer $ [] dev?
+          [] "\"luxon" :refer $ [] DateTime
+          [] applied-science.js-interop :as j
+          [] respo.util.list :refer $ [] map-val
+          [] clojure.string :as string
+          [] app.util.string :refer $ [] split-words-comma
+          [] app.util :refer $ [] get-year
+    |app.comp.viewer $ {}
       :defs $ {}
         |comp-filter-buttons $ quote
           defcomp comp-filter-buttons (tag)
@@ -140,8 +231,6 @@
                 a $ {} (:style ui/link) (:inner-text "\"Group 2018")
                   :on-click $ fn (e d!)
                     d! :router $ {} (:name new-page) (:data 2018)
-        |tags $ quote
-          def tags $ [] :food :mood :place :met :highlight :exercise
         |comp-viewer $ quote
           defcomp comp-viewer (states records)
             let
@@ -240,10 +329,100 @@
             :border-radius "\"4px"
             :color :white
             :cursor :pointer
-    |app.updater $ {}
+        |tags $ quote
+          def tags $ [] :food :mood :place :met :highlight :exercise
       :ns $ quote
-        ns app.updater $ :require
-          [] respo.cursor :refer $ [] update-states
+        ns app.comp.viewer $ :require
+          [] respo-ui.core :refer $ [] hsl
+          [] respo-ui.core :as ui
+          [] respo.core :refer $ [] defcomp >> list-> <> div button textarea span input a
+          [] respo.comp.space :refer $ [] =<
+          [] reel.comp.reel :refer $ [] comp-reel
+          [] respo-md.comp.md :refer $ [] comp-md
+          [] app.config :refer $ [] dev?
+          [] "\"luxon" :refer $ [] DateTime
+          [] applied-science.js-interop :as j
+          [] respo.util.list :refer $ [] map-val
+    |app.config $ {}
+      :defs $ {}
+        |dev? $ quote
+          def dev? $ = "\"dev" (get-env "\"mode" "\"release")
+        |site $ quote
+          def site $ {} (:dev-ui "\"http://localhost:8100/main-fonts.css") (:release-ui "\"http://cdn.tiye.me/favored-fonts/main-fonts.css") (:cdn-url "\"http://cdn.tiye.me/diary-viewer/") (:title "\"Diary Viewer") (:icon "\"http://cdn.tiye.me/logo/memkits.png") (:storage-key "\"diary-viewer")
+      :ns $ quote (ns app.config)
+    |app.main $ {}
+      :defs $ {}
+        |*reel $ quote
+          defatom *reel $ -> reel-schema/reel (assoc :base schema/store) (assoc :store schema/store)
+        |dispatch! $ quote
+          defn dispatch! (op op-data)
+            when config/dev? $ println "\"Dispatch:" op
+            reset! *reel $ reel-updater updater @*reel op op-data
+        |load-records! $ quote
+          defn load-records! () $ dispatch! :records
+            to-calcit-data $ js/JSON.parse (slurp "\"data/diary.json")
+        |main! $ quote
+          defn main! ()
+            println "\"Running mode:" $ if config/dev? "\"dev" "\"release"
+            render-app!
+            add-watch *reel :changes $ fn (r p) (render-app!)
+            listen-devtools! |k dispatch!
+            ; .addEventListener js/window |beforeunload persist-storage!
+            ; repeat! 60 persist-storage!
+            ; let
+                raw $ .getItem js/localStorage (:storage-key config/site)
+              when (some? raw)
+                dispatch! :hydrate-storage $ parse-cirru-edn raw
+            ; load-records!
+            println "|App started."
+        |mount-target $ quote
+          def mount-target $ .querySelector js/document |.app
+        |persist-storage! $ quote
+          defn persist-storage! (? e)
+            .setItem js/localStorage (:storage-key config/site)
+              format-cirru-edn $ :store @*reel
+        |reload! $ quote
+          defn reload! () $ if (nil? build-errors)
+            do (remove-watch *reel :changes) (clear-cache!)
+              add-watch *reel :changes $ fn (reel prev) (render-app!)
+              reset! *reel $ refresh-reel @*reel schema/store updater
+              ; load-records!
+              hud! "\"ok~" "\"Ok"
+            hud! "\"error" build-errors
+        |render-app! $ quote
+          defn render-app! () $ render! mount-target (comp-container @*reel) dispatch!
+        |repeat! $ quote
+          defn repeat! (duration cb)
+            js/setTimeout
+              fn () (cb)
+                repeat! (* 1000 duration) cb
+              * 1000 duration
+        |slurp $ quote
+          defmacro slurp (path) (read-file path)
+        |snippets $ quote
+          defn snippets () $ println config/cdn?
+      :ns $ quote
+        ns app.main $ :require
+          [] respo.core :refer $ [] render! clear-cache! realize-ssr!
+          [] app.comp.container :refer $ [] comp-container
+          [] app.updater :refer $ [] updater
+          [] app.schema :as schema
+          [] reel.util :refer $ [] listen-devtools!
+          [] reel.core :refer $ [] reel-updater refresh-reel
+          [] reel.schema :as reel-schema
+          [] cljs.reader :refer $ [] read-string
+          [] app.config :as config
+          "\"./calcit.build-errors" :default build-errors
+          "\"bottom-tip" :default hud!
+    |app.schema $ {}
+      :defs $ {}
+        |store $ quote
+          def store $ {}
+            :states $ {}
+            :records $ {}
+            :router $ {} (:name :home) (:data nil)
+      :ns $ quote (ns app.schema)
+    |app.updater $ {}
       :defs $ {}
         |updater $ quote
           defn updater (store op op-data op-id op-time)
@@ -253,65 +432,18 @@
               :records $ assoc store :records op-data
               :router $ assoc store :router op-data
               :hydrate-storage op-data
-    |app.comp.food-analysis $ {}
       :ns $ quote
-        ns app.comp.food-analysis $ :require
-          [] respo-ui.core :refer $ [] hsl
-          [] respo-ui.core :as ui
-          [] respo.core :refer $ [] defcomp >> list-> <> div button textarea span input
-          [] respo.comp.space :refer $ [] =<
-          [] reel.comp.reel :refer $ [] comp-reel
-          [] respo-md.comp.md :refer $ [] comp-md
-          [] app.config :refer $ [] dev?
-          [] "\"luxon" :refer $ [] DateTime
-          [] applied-science.js-interop :as j
-          [] respo.util.list :refer $ [] map-val
-          [] clojure.string :as string
-          [] app.util.string :refer $ [] split-words
-          [] app.util :refer $ [] get-year
+        ns app.updater $ :require
+          [] respo.cursor :refer $ [] update-states
+    |app.util $ {}
       :defs $ {}
-        |comp-food-analysis $ quote
-          defcomp comp-food-analysis (records router)
+        |get-year $ quote
+          defn get-year (x)
             let
-                foods $ -> records (.to-list) (map last)
-                  filter $ fn (day-info)
-                    if
-                      some? $ :data router
-                      = (:data router)
-                        get-year $ :time day-info
-                      , true
-                  map $ fn (x)
-                    or (get x :food) "\""
-                  mapcat $ fn (chunk)
-                    split-words ([]) "\"" chunk
-                  filter $ fn (x)
-                    not $ .blank? x
-                  .frequencies 
-              div
-                {} $ :style
-                  merge ui/expand ui/column $ {} (:padding "\"8px 16px")
-                div
-                  {} $ :style ({})
-                  <>
-                    str "\"Foods of " $ or (:data router) "\"all"
-                    {} $ :font-family ui/font-fancy
-                list->
-                  {} $ :style
-                    merge ui/expand $ {} (:column-count 10)
-                  -> foods (.to-list)
-                    .sort-by $ fn (pair)
-                      negate $ last pair
-                    map $ fn (pair)
-                      let[] (food times) pair $ [] food
-                        div
-                          {} $ :style
-                            {} (:padding "\"0 8px") (:line-height 1.5)
-                          <> times $ {} (:margin-right 8) (:font-family ui/font-code) (:font-size 10)
-                            :color $ hsl 0 0 70
-                          <> food $ {} (:font-size 12) (:white-space :nowrap)
+                d $ new js/Date x
+              .getFullYear d
+      :ns $ quote (ns app.util)
     |app.util.string $ {}
-      :ns $ quote
-        ns app.util.string $ :require ([] clojure.string :as string)
       :defs $ {}
         |split-words $ quote
           defn split-words (acc buffer text)
@@ -339,137 +471,5 @@
                     if (.blank? buffer) acc $ conj acc buffer
                     , "\""
                       .!trimLeft $ .slice text 1
-    |app.comp.place-analysis $ {}
       :ns $ quote
-        ns app.comp.place-analysis $ :require
-          [] respo-ui.core :refer $ [] hsl
-          [] respo-ui.core :as ui
-          [] respo.core :refer $ [] defcomp >> list-> <> div button textarea span input
-          [] respo.comp.space :refer $ [] =<
-          [] reel.comp.reel :refer $ [] comp-reel
-          [] respo-md.comp.md :refer $ [] comp-md
-          [] app.config :refer $ [] dev?
-          [] "\"luxon" :refer $ [] DateTime
-          [] applied-science.js-interop :as j
-          [] respo.util.list :refer $ [] map-val
-          [] clojure.string :as string
-          [] app.util.string :refer $ [] split-words-comma
-          [] app.util :refer $ [] get-year
-      :defs $ {}
-        |comp-place-analysis $ quote
-          defcomp comp-place-analysis (records router)
-            let
-                records $ -> records (map last)
-                  filter $ fn (day-info)
-                    if
-                      some? $ :data router
-                      = (:data router)
-                        get-year $ :time day-info
-                      , true
-                  map $ fn (x) (:place x)
-                  mapcat $ fn (chunk)
-                    split-words-comma ([]) "\"" chunk
-                  filter $ fn (x)
-                    not $ .blank? x
-                  frequencies
-              div
-                {} $ :style
-                  merge ui/expand ui/column $ {} (:padding "\"8px 16px")
-                div
-                  {} $ :style ({})
-                  <>
-                    str "\"Places of " $ or (:data router) "\"all"
-                    {} $ :font-family ui/font-fancy
-                list->
-                  {} $ :style
-                    merge ui/expand $ {} (:column-count 6)
-                  -> records
-                    .sort-by $ fn (pair)
-                      negate $ last pair
-                    map $ fn (pair)
-                      let[] (record times) pair $ [] record
-                        div
-                          {} $ :style
-                            {} (:padding "\"0 8px") (:line-height 1.5)
-                          <> times $ {} (:margin-right 8) (:font-family ui/font-code) (:font-size 10)
-                            :color $ hsl 0 0 70
-                          <> record $ {} (:font-size 12) (:white-space :nowrap)
-    |app.main $ {}
-      :ns $ quote
-        ns app.main $ :require
-          [] respo.core :refer $ [] render! clear-cache! realize-ssr!
-          [] app.comp.container :refer $ [] comp-container
-          [] app.updater :refer $ [] updater
-          [] app.schema :as schema
-          [] reel.util :refer $ [] listen-devtools!
-          [] reel.core :refer $ [] reel-updater refresh-reel
-          [] reel.schema :as reel-schema
-          [] cljs.reader :refer $ [] read-string
-          [] app.config :as config
-          "\"./calcit.build-errors" :default build-errors
-          "\"bottom-tip" :default hud!
-      :defs $ {}
-        |render-app! $ quote
-          defn render-app! () $ render! mount-target (comp-container @*reel) dispatch!
-        |persist-storage! $ quote
-          defn persist-storage! (? e)
-            .setItem js/localStorage (:storage-key config/site)
-              format-cirru-edn $ :store @*reel
-        |mount-target $ quote
-          def mount-target $ .querySelector js/document |.app
-        |load-records! $ quote
-          defn load-records! () $ dispatch! :records
-            to-calcit-data $ js/JSON.parse (slurp "\"data/diary.json")
-        |*reel $ quote
-          defatom *reel $ -> reel-schema/reel (assoc :base schema/store) (assoc :store schema/store)
-        |main! $ quote
-          defn main! ()
-            println "\"Running mode:" $ if config/dev? "\"dev" "\"release"
-            render-app!
-            add-watch *reel :changes $ fn (r p) (render-app!)
-            listen-devtools! |k dispatch!
-            ; .addEventListener js/window |beforeunload persist-storage!
-            ; repeat! 60 persist-storage!
-            ; let
-                raw $ .getItem js/localStorage (:storage-key config/site)
-              when (some? raw)
-                dispatch! :hydrate-storage $ parse-cirru-edn raw
-            ; load-records!
-            println "|App started."
-        |slurp $ quote
-          defmacro slurp (path) (read-file path)
-        |snippets $ quote
-          defn snippets () $ println config/cdn?
-        |dispatch! $ quote
-          defn dispatch! (op op-data)
-            when config/dev? $ println "\"Dispatch:" op
-            reset! *reel $ reel-updater updater @*reel op op-data
-        |reload! $ quote
-          defn reload! () $ if (nil? build-errors)
-            do (remove-watch *reel :changes) (clear-cache!)
-              add-watch *reel :changes $ fn (reel prev) (render-app!)
-              reset! *reel $ refresh-reel @*reel schema/store updater
-              ; load-records!
-              hud! "\"ok~" "\"Ok"
-            hud! "\"error" build-errors
-        |repeat! $ quote
-          defn repeat! (duration cb)
-            js/setTimeout
-              fn () (cb)
-                repeat! (* 1000 duration) cb
-              * 1000 duration
-    |app.util $ {}
-      :ns $ quote (ns app.util)
-      :defs $ {}
-        |get-year $ quote
-          defn get-year (x)
-            let
-                d $ new js/Date x
-              .getFullYear d
-    |app.config $ {}
-      :ns $ quote (ns app.config)
-      :defs $ {}
-        |dev? $ quote
-          def dev? $ = "\"dev" (get-env "\"mode")
-        |site $ quote
-          def site $ {} (:dev-ui "\"http://localhost:8100/main-fonts.css") (:release-ui "\"http://cdn.tiye.me/favored-fonts/main-fonts.css") (:cdn-url "\"http://cdn.tiye.me/diary-viewer/") (:title "\"Diary Viewer") (:icon "\"http://cdn.tiye.me/logo/memkits.png") (:storage-key "\"diary-viewer")
+        ns app.util.string $ :require ([] clojure.string :as string)
