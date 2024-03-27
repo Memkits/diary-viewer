@@ -1581,8 +1581,9 @@
                           |T $ %{} :Leaf (:at 1578202560026) (:by |rJG4IHzWf) (:text |new-page)
                           |j $ %{} :Expr (:at 1578202560273) (:by |rJG4IHzWf)
                             :data $ {}
-                              |T $ %{} :Leaf (:at 1578202560922) (:by |rJG4IHzWf) (:text |case)
+                              |T $ %{} :Leaf (:at 1711563170751) (:by |rJG4IHzWf) (:text |case-default)
                               |j $ %{} :Leaf (:at 1578202562978) (:by |rJG4IHzWf) (:text |tag)
+                              |n $ %{} :Leaf (:at 1711563171688) (:by |rJG4IHzWf) (:text |nil)
                               |r $ %{} :Expr (:at 1578202563455) (:by |rJG4IHzWf)
                                 :data $ {}
                                   |T $ %{} :Leaf (:at 1578202565501) (:by |rJG4IHzWf) (:text |:food)
@@ -1591,10 +1592,6 @@
                                 :data $ {}
                                   |T $ %{} :Leaf (:at 1578202579160) (:by |rJG4IHzWf) (:text |:place)
                                   |j $ %{} :Leaf (:at 1578202580675) (:by |rJG4IHzWf) (:text |:place-analysis)
-                              |x $ %{} :Expr (:at 1578203399997) (:by |rJG4IHzWf)
-                                :data $ {}
-                                  |T $ %{} :Leaf (:at 1578203401317) (:by |rJG4IHzWf) (:text |do)
-                                  |j $ %{} :Leaf (:at 1578203402534) (:by |rJG4IHzWf) (:text |nil)
                   |T $ %{} :Expr (:at 1578202526259) (:by |rJG4IHzWf)
                     :data $ {}
                       |T $ %{} :Leaf (:at 1578202526670) (:by |rJG4IHzWf) (:text |div)

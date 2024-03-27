@@ -223,7 +223,7 @@
           :code $ quote
             defcomp comp-filter-buttons (tag)
               let
-                  new-page $ case tag (:food :food-analysis) (:place :place-analysis) (do nil)
+                  new-page $ case-default tag nil (:food :food-analysis) (:place :place-analysis)
                 div
                   {} $ :style ui/row-middle
                   a $ {} (:style ui/link) (:inner-text "\"Group")
