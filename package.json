@@ -12,13 +12,13 @@
   "license": "MIT",
   "devDependencies": {
     "bottom-tip": "^0.1.5",
-    "vite": "^4.3.9"
+    "vite": "^5.2.6"
   },
   "dependencies": {
-    "@calcit/procs": "^0.7.0",
-    "feather-icons": "^4.29.0",
+    "@calcit/procs": "^0.8.45",
+    "feather-icons": "^4.29.1",
     "jsedn": "^0.4.1",
-    "luxon": "^3.3.0",
+    "luxon": "^3.4.4",
     "shortid": "^2.2.16"
   }
 }
