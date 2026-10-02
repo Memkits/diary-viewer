@@ -3,7 +3,13 @@
   "version": "0.1.0",
   "description": "ClojureScript workflow using Calcit Editor",
   "main": "index.js",
-  "scripts": {},
+  "packageManager": "yarn@4.18.0",
+  "scripts": {
+    "build": "calcit calcit.cirru && vite build",
+    "dev": "calcit calcit.cirru && vite",
+    "watch": "calcit calcit.cirru -w",
+    "test": "node --test scripts/diary.test.mjs"
+  },
   "repository": {
     "type": "git",
     "url": "git@github.com:mvc-works/calcit-workflow.git"
@@ -11,14 +17,10 @@
   "author": "jiyinyiyong",
   "license": "MIT",
   "devDependencies": {
-    "bottom-tip": "^0.1.5",
-    "vite": "^5.2.6"
+    "vite": "8.3.1"
   },
   "dependencies": {
-    "@calcit/procs": "^0.8.45",
-    "feather-icons": "^4.29.1",
-    "jsedn": "^0.4.1",
-    "luxon": "^3.4.4",
-    "shortid": "^2.2.16"
+    "@calcit/procs": "0.27.0",
+    "luxon": "3.7.2"
   }
 }
