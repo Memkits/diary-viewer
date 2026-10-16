@@ -28,6 +28,7 @@ yarn dev
 
 记录保持原 Map 数据格式，外层 key 兼容 JSON/EDN，记录值是 tag 字段 Map；
 输入在实际边界检查，统计遍历使用保留 key/value 类型和重复项的 MapEntry。
+统计结果也直接使用 MapEntry 的 String key / Number value，显示次数时显式转成文本。
 原分词、Luxon 周分组、年份筛选和存储行为不变。去除 trimLeft 的 String 强转，
 保留本地 Date/getFullYear 的真实宿主身份边界；不增加业务默认值、缓存或质量预算豁免。
 
@@ -37,7 +38,7 @@ yarn dev
 
 ### 限制
 
-alpha.4 的公开 frequencies 被完整 strict 拒绝，见 [Calcit #2149](https://github.com/calcit-lang/calcit/issues/2149)；普通检查和运行回归通过不代表该迁移已完成严格验收。
+alpha.4 的公开 frequencies 被完整 strict 拒绝，见 [Calcit #2149](https://github.com/calcit-lang/calcit/issues/2149)；普通检查和运行回归通过不代表该迁移已完成严格验收，仍需包含上游修复的已发布配对工具链。
 
 ### License
 

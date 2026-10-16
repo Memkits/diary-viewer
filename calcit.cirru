@@ -174,18 +174,15 @@
                 list->
                   {} $ :style $ merge ui/expand
                     {} $ :column-count 10
-                  -> foods (.to-list)
-                    .sort-by $ fn (pair)
-                      negate $ decode-map-as
-                          last pair
-                          , .unwrap
-                        , 'Number
-                    map $ fn (pair)
-                      let[] (food times) pair $ [] food $ div
+                  -> (map-entries foods)
+                    .sort-by $ fn (entry) negate entry.:value
+                    map $ fn (entry)
+                      [] entry.:key $ div
                         {} $ :style $ {} (:padding "|0 8px") (:line-height 1.5)
-                        <> times $ {} (:margin-right 8) (:font-family ui/font-code) (:font-size 10)
-                          :color $ hsl 0 0 70
-                        <> food $ {} (:font-size 12) (:white-space :nowrap)
+                        <> (str entry.:value)
+                          {} (:margin-right 8) (:font-family ui/font-code) (:font-size 10)
+                            :color $ hsl 0 0 70
+                        <> entry.:key $ {} (:font-size 12) (:white-space :nowrap)
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
             :args $ []
@@ -245,18 +242,15 @@
                 list->
                   {} $ :style $ merge ui/expand
                     {} $ :column-count 6
-                  -> (records .to-list)
-                    .sort-by $ fn (pair)
-                      negate $ decode-map-as
-                          last pair
-                          , .unwrap
-                        , 'Number
-                    map $ fn (pair)
-                      let[] (record times) pair $ [] record $ div
+                  -> (map-entries records)
+                    .sort-by $ fn (entry) negate entry.:value
+                    map $ fn (entry)
+                      [] entry.:key $ div
                         {} $ :style $ {} (:padding "|0 8px") (:line-height 1.5)
-                        <> times $ {} (:margin-right 8) (:font-family ui/font-code) (:font-size 10)
-                          :color $ hsl 0 0 70
-                        <> record $ {} (:font-size 12) (:white-space :nowrap)
+                        <> (str entry.:value)
+                          {} (:margin-right 8) (:font-family ui/font-code) (:font-size 10)
+                            :color $ hsl 0 0 70
+                        <> entry.:key $ {} (:font-size 12) (:white-space :nowrap)
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
             :args $ []
