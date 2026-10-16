@@ -13,9 +13,16 @@
         'comp-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-container (reel)
             let
-                store $ &map:get reel :store
-                states $ &map:get store :states
-                router $ &map:get store :router
+                store $ decode-map-as
+                  option:unwrap $ get reel :store
+                  :: 'Map 'Tag 'Dynamic
+                states $ decode-map-as
+                  option:unwrap $ get store :states
+                  :: 'Map 'Dynamic 'Dynamic
+                router $ decode-map-as
+                  option:unwrap $ get store :router
+                  :: 'Map 'Tag 'Dynamic
+                records $ app.schema/read-records $ option:unwrap (get store :records)
               div
                 {} $ :style $ merge ui/global ui/fullscreen ui/column
                 div
@@ -23,14 +30,16 @@
                     {} $ :border-bottom $ str "|1px solid " (hsl 0 0 90)
                   render-entry |Home :home router
                   render-entry |Editor :editor router
-                case-default
-                  or (&map:get router :name) :home
-                  div ({})
-                    <> $ str |Else $ &map:get store :page
-                  :home $ comp-viewer (>> states :viewer) (&map:get store :records)
-                  :editor $ comp-editor (>> states :editor) (&map:get store :records)
-                  :food-analysis $ comp-food-analysis (&map:get store :records) router
-                  :place-analysis $ comp-place-analysis (&map:get store :records) router
+                match
+                  or
+                    option:unwrap-or (get router :name) nil
+                    , :home
+                  :home $ comp-viewer (>> states :viewer) records
+                  :editor $ comp-editor (>> states :editor) records
+                  :food-analysis $ comp-food-analysis records router
+                  :place-analysis $ comp-place-analysis records router
+                  _ $ div ({})
+                    <> $ str |Else $ option:unwrap-or (get store :page) nil
                 when dev? $ comp-reel (>> states :reel) reel $ {}
                 when dev? $ comp-inspect |store store $ {} (:bottom 0)
           :examples $ []
@@ -47,12 +56,12 @@
                     :color $ hsl 0 0 70
                     :font-size 16
                     :font-family ui/font-fancy
-                  assert-type
-                    if
-                      = code $ &map:get router :name
-                      {} $ :color $ hsl 0 0 30
-                      {}
-                    :: 'Map 'Tag 'Dynamic
+                  if
+                    let
+                        route $ option:unwrap-or (get router :name) nil
+                      if (tag? route) (= code route) false
+                    {} $ :color $ hsl 0 0 30
+                    {}
               <> title
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Element)
@@ -75,28 +84,44 @@
         %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-editor (states records)
             let
-                cursor $ &map:get states :cursor
-                state $ or (&map:get states :data)
-                  {} $ :text $ format-cirru-edn records
+                cursor $ decode-map-as
+                  option:unwrap-or (get states :cursor) ([])
+                  :: 'List 'Dynamic
+                state $ decode-map-as
+                  or
+                    option:unwrap-or (get states :data) nil
+                    {} $ :text $ format-cirru-edn records
+                  :: 'Map 'Tag 'Dynamic
               div
                 {} $ :style $ merge ui/expand
                   {} $ :padding 16
                 textarea $ {}
                   :style $ merge ui/textarea $ {} (:width |100%) (:height |80%) (:font-family ui/font-code) (:font-size 12) (:padding-bottom 200)
-                  :value $ &map:get state :text
+                  :value $ decode-map-as
+                    option:unwrap $ get state :text
+                    , 'String
                   :placeholder "|EDN piece of diaries storage, keys are dates"
                   :on-input $ fn (e d!)
-                    d! $ :: :states cursor $ assoc state :text (&map:get e :value)
+                    d! $ :: :states cursor $ assoc state :text
+                      decode-map-as
+                        option:unwrap $ get
+                          decode-map-as e $ :: 'Map 'Tag 'Dynamic
+                          , :value
+                        , 'String
                 div
                   {} $ :style $ {} (:padding "|16px 0")
                   button $ {} (:style ui/button) (:inner-text |Analyze)
                     :on-click $ fn (e d!)
-                      d! $ :: :records $ parse-cirru-edn (&map:get state :text)
+                      d! $ :: :records $ parse-cirru-edn
+                        decode-map-as
+                          option:unwrap $ get state :text
+                          , 'String
                       d! $ :: :states cursor nil
                       d! $ :: :router $ {} (:name :home)
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] (:: 'Map 'Tag 'Dynamic) (:: 'Map 'Tag 'Dynamic)
+            :args $ [] (:: 'Map 'Dynamic 'Dynamic)
+              :: 'Map 'Dynamic $ :: 'Map 'Tag 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.editor
           :require
@@ -108,20 +133,20 @@
         %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-food-analysis (records router)
             let
-                foods $ -> records (.to-list)
-                  map $ fn (pair)
-                    assert-type
-                        last pair
-                        , .unwrap
-                      :: 'Map 'Tag 'Dynamic
+                foods $ ->
+                  map (map-entries records)
+                    fn (entry) entry.:value
                   filter $ fn (day-info)
                     if
-                      some? $ &map:get router :data
-                      = (&map:get router :data)
-                        get-year $ &map:get day-info :time
+                      non-nil? $ option:unwrap-or (get router :data) nil
+                      =
+                        decode-map-as
+                          option:unwrap-or (get router :data) nil
+                          , 'Number
+                        get-year $ option:unwrap-or (get day-info :time) nil
                       , true
                   map $ fn (x)
-                    assert-type
+                    decode-map-as
                         get x :food
                         , .unwrap-or |
                       , 'String
@@ -142,14 +167,16 @@
                 div
                   {} $ :style $ {}
                   <>
-                    str "|Foods of " $ or (&map:get router :data) |all
+                    str "|Foods of " $ or
+                      option:unwrap-or (get router :data) nil
+                      , |all
                     {} $ :font-family ui/font-fancy
                 list->
                   {} $ :style $ merge ui/expand
                     {} $ :column-count 10
                   -> foods (.to-list)
                     .sort-by $ fn (pair)
-                      negate $ assert-type
+                      negate $ decode-map-as
                           last pair
                           , .unwrap
                         , 'Number
@@ -161,7 +188,9 @@
                         <> food $ {} (:font-size 12) (:white-space :nowrap)
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] (:: 'Map 'Tag 'Dynamic) (:: 'Map 'Tag 'Dynamic)
+            :args $ []
+              :: 'Map 'Dynamic $ :: 'Map 'Tag 'Dynamic
+              :: 'Map 'Tag 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.food-analysis
           :require
@@ -175,20 +204,20 @@
         %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-place-analysis (records router)
             let
-                records $ -> (records .to-list)
-                  map $ fn (pair)
-                    assert-type
-                        last pair
-                        , .unwrap
-                      :: 'Map 'Tag 'Dynamic
+                records $ ->
+                  map (map-entries records)
+                    fn (entry) entry.:value
                   filter $ fn (day-info)
                     if
-                      some? $ &map:get router :data
-                      = (&map:get router :data)
-                        get-year $ &map:get day-info :time
+                      non-nil? $ option:unwrap-or (get router :data) nil
+                      =
+                        decode-map-as
+                          option:unwrap-or (get router :data) nil
+                          , 'Number
+                        get-year $ option:unwrap-or (get day-info :time) nil
                       , true
                   map $ fn (x)
-                    assert-type
+                    decode-map-as
                         get x :place
                         , .unwrap-or |
                       , 'String
@@ -209,14 +238,16 @@
                 div
                   {} $ :style $ {}
                   <>
-                    str "|Places of " $ or (&map:get router :data) |all
+                    str "|Places of " $ or
+                      option:unwrap-or (get router :data) nil
+                      , |all
                     {} $ :font-family ui/font-fancy
                 list->
                   {} $ :style $ merge ui/expand
                     {} $ :column-count 6
                   -> (records .to-list)
                     .sort-by $ fn (pair)
-                      negate $ assert-type
+                      negate $ decode-map-as
                           last pair
                           , .unwrap
                         , 'Number
@@ -228,7 +259,9 @@
                         <> record $ {} (:font-size 12) (:white-space :nowrap)
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] (:: 'Map 'Tag 'Dynamic) (:: 'Map 'Tag 'Dynamic)
+            :args $ []
+              :: 'Map 'Dynamic $ :: 'Map 'Tag 'Dynamic
+              :: 'Map 'Tag 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.place-analysis
           :require
@@ -242,7 +275,7 @@
         'comp-filter-buttons $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-filter-buttons (tag)
             let
-                new-page $ case-default tag nil (:food :food-analysis) (:place :place-analysis)
+                new-page $ match tag (:food :food-analysis) (:place :place-analysis) (_ nil)
               div
                 {} $ :style ui/row-middle
                 a $ {} (:style ui/link) (:inner-text |Group)
@@ -266,9 +299,14 @@
         'comp-viewer $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-viewer (states records)
             let
-                cursor $ &map:get states :cursor
-                state $ or (&map:get states :data)
-                  {} $ :tag :food
+                cursor $ decode-map-as
+                  option:unwrap-or (get states :cursor) ([])
+                  :: 'List 'Dynamic
+                state $ decode-map-as
+                  or
+                    option:unwrap-or (get states :data) nil
+                    {} $ :tag :food
+                  :: 'Map 'Tag 'Dynamic
               div
                 {} $ :style $ merge ui/expand ui/column
                   {} $ :padding 16
@@ -283,48 +321,53 @@
                       {} $ :style ui/row-middle
                       -> tags $ map $ fn (tag)
                         [] tag $ span $ {}
-                          :style $ merge style-tag $ assert-type
-                            if
-                              = tag $ assert-type (&map:get state :tag) 'Tag
-                              {} $ :background-color $ hsl 200 80 70
-                              {}
-                            :: 'Map 'Tag 'Dynamic
+                          :style $ merge style-tag $ if
+                            = tag $ decode-map-as
+                              option:unwrap $ get state :tag
+                              , 'Tag
+                            {} $ :background-color $ hsl 200 80 70
+                            {}
                           :inner-text tag
                           :on-click $ fn (e d!)
                             d! $ :: :states cursor $ assoc state :tag tag
-                  comp-filter-buttons $ assert-type (&map:get state :tag) 'Tag
+                  comp-filter-buttons $ decode-map-as
+                    option:unwrap $ get state :tag
+                    , 'Tag
                 list->
                   {} $ :style $ merge ui/expand
                     {} $ :border-top $ str "|1px solid " (hsl 0 0 80)
-                  -> records (.to-list)
-                    map $ fn (pair)
-                      assert-type
-                          last pair
-                          , .unwrap
-                        :: 'Map 'Tag 'Dynamic
+                  ->
+                    map (map-entries records)
+                      fn (entry) entry.:value
                     filter $ fn (info)
-                      some? $ &map:get info $ assert-type (&map:get state :tag) 'Tag
+                      non-nil? $ option:unwrap-or
+                        get info $ decode-map-as
+                          option:unwrap $ get state :tag
+                          , 'Tag
+                        , nil
                     group-by $ fn (info)
-                      week-key $ assert-type (&map:get info :date) 'String
+                      week-key $ decode-map-as
+                        option:unwrap $ get info :date
+                        , 'String
                     .to-list
                     sort $ fn (p1 p2)
                       &compare
-                        assert-type
+                        decode-map-as
                             first p1
                             , .unwrap
                           , 'String
-                        assert-type
+                        decode-map-as
                             first p2
                             , .unwrap
                           , 'String
                     map $ fn (pair)
                       []
-                        assert-type
+                        decode-map-as
                             first pair
                             , .unwrap
                           , 'String
                         let
-                            days-info $ assert-type
+                            days-info $ decode-map-as
                                 last pair
                                 , .unwrap
                               :: 'List $ :: 'Map 'Tag 'Dynamic
@@ -332,35 +375,51 @@
                             {} $ :style $ {} (:padding-top 8)
                             div $ {}
                               :style $ {} $ :font-family ui/font-fancy
-                              :inner-text $ assert-type
-                                &map:get
-                                    first $ days-info .sort-by $ fn (day)
-                                      assert-type (&map:get day :date) 'String
-                                    , .unwrap
-                                  , :date
+                              :inner-text $ decode-map-as
+                                option:unwrap-or
+                                  get
+                                      first $ days-info .sort-by $ fn (day)
+                                        decode-map-as
+                                          option:unwrap $ get day :date
+                                          , 'String
+                                      , .unwrap
+                                    , :date
+                                  , nil
                                 , 'String
                             list->
                               {} $ :style $ merge ui/row ({})
                               -> days-info
-                                .sort-by $ fn (info) (&map:get info :date)
+                                .sort-by $ fn (info)
+                                  decode-map-as
+                                    option:unwrap $ get info :date
+                                    , 'String
                                 map $ fn (info)
-                                  [] (&map:get info :date)
+                                  []
+                                    decode-map-as
+                                      option:unwrap $ get info :date
+                                      , 'String
                                     let
-                                        content $ &map:get info $ assert-type (&map:get state :tag) 'Tag
-                                      if (some? content)
+                                        content $ option:unwrap-or
+                                          get info $ decode-map-as
+                                            option:unwrap $ get state :tag
+                                            , 'Tag
+                                          , nil
+                                      if (non-nil? content)
                                         div
                                           {} $ :style $ merge ui/expand
                                             {}
                                               :border-left $ str "|1px solid " $ hsl 0 0 80
                                               :padding |8px
                                           <>
-                                            weekday $ assert-type (&map:get info :date) 'String
+                                            weekday $ decode-map-as
+                                              option:unwrap $ get info :date
+                                              , 'String
                                             {}
                                               :color $ hsl 0 0 80
                                               :margin 8
                                               :font-size 12
                                               :font-family ui/font-fancy
-                                          <> content
+                                          <> $ str content
                                         <> |nothing $ merge ui/expand $ {}
                                           :border-left $ str "|1px solid " $ hsl 0 0 80
                                           :padding |8px
@@ -368,7 +427,8 @@
                                           :font-family ui/font-fancy
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] (:: 'Map 'Tag 'Dynamic) (:: 'Map 'Tag 'Dynamic)
+            :args $ [] (:: 'Map 'Dynamic 'Dynamic)
+              :: 'Map 'Dynamic $ :: 'Map 'Tag 'Dynamic
         'style-tag $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-tag
             {}
@@ -420,7 +480,7 @@
           :schema $ :: 'Trait
         'trim-left $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn trim-left (text)
-            unsafe-coerce (.!trimLeft text) 'String
+            js-ffi.contract/expect-string |trimLeft $ .!trimLeft text
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'String)
             :args $ [] 'String
@@ -450,22 +510,29 @@
     'app.main $ %{} 'FileEntry
       :defs $ {}
         '*reel $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defatom *reel
+          :code $ quote $ defref *reel
             -> reel-schema/reel (assoc :base schema/store) (assoc :store schema/store)
           :examples $ []
           :schema $ :: 'Ref $ :: 'Map 'Tag 'Dynamic
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op)
             when config/dev? $ println |Dispatch: op
-            reset! *reel $ reel-updater updater @*reel op
+            reset! *reel $ reel-updater app.updater/update-wire-store @*reel op
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ [] 'Enum
+        'dispatch-wire! $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn dispatch-wire! (op)
+            if (enum? op) (dispatch! op) (raise |Expected-Enum-operation)
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'Unit)
+            :args $ [] 'Dynamic
         'load-records! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn load-records! (source)
             match (source .parse-json)
               (:ok data)
-                dispatch! $ :: :records $ assert-type data (:: 'Map 'Tag 'Dynamic)
+                dispatch! $ :: :records data
               (:err message) (raise message)
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
@@ -474,44 +541,41 @@
           :code $ quote $ defn main! ()
             println "|Running mode:" $ if config/dev? |dev |release
             render-app!
-            add-watch *reel :changes $ fn (r p) (render-app!)
-            listen-devtools! |k dispatch!
-            ; .addEventListener js/window |beforeunload persist-storage!
-            ; repeat! 60 persist-storage!
-            ; let
-              (raw (.getItem js/localStorage (:storage-key config/site)))
-              when (some? raw)
-                dispatch! :hydrate-storage $ parse-cirru-edn raw
-            ; load-records!
+            add-watch! *reel :changes $ fn (r p) (render-app!)
+            listen-devtools! |k dispatch-wire!
             println "|App started."
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ []
         'mount-target $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def mount-target
-            (browser/query-selector |.app) .unwrap
+            option:unwrap $ respo.ffi.browser/query-selector |.app
           :examples $ []
-          :schema $ :: 'js-ffi.browser/DomElementHost
+          :schema $ :: 'respo.dom/DomElement
         'persist-storage! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn persist-storage! ()
             browser/storage-set!
                 get config/site :storage-key
                 , .unwrap
-              format-cirru-edn $ assert-type (&map:get @*reel :store) (:: 'Map 'Tag 'Dynamic)
+              format-cirru-edn $ decode-map-as
+                option:unwrap $ get @*reel :store
+                :: 'Map 'Tag 'Dynamic
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ []
         'reload! $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn reload! () (remove-watch *reel :changes) (clear-cache!)
-            add-watch *reel :changes $ fn (reel prev) (render-app!)
-            reset! *reel $ assert-type (refresh-reel @*reel schema/store updater) (:: 'Map 'Tag 'Dynamic)
+          :code $ quote $ defn reload! () (remove-watch! *reel :changes) (clear-cache!)
+            add-watch! *reel :changes $ fn (reel prev) (render-app!)
+            reset! *reel $ decode-map-as (refresh-reel @*reel schema/store app.updater/update-wire-store) (:: 'Map 'Tag 'Dynamic)
             println |Code-updated.
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ []
         'render-app! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-app! ()
-            render! mount-target (comp-container @*reel) dispatch!
+            render! mount-target (comp-container @*reel) dispatch-wire!
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ []
@@ -539,8 +603,15 @@
             app.config :as config
             js-ffi.browser :as browser
     'app.schema $ %{} 'FileEntry
-      :defs $ {} $ 'store
-        %{} 'CodeEntry (:doc |)
+      :defs $ {}
+        'read-records $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn read-records (value)
+            decode-map-as value $ :: 'Map 'Dynamic $ :: 'Map 'Tag 'Dynamic
+          :examples $ []
+          :schema $ :: 'Fn $ {}
+            :args $ [] 'Dynamic
+            :return $ :: 'Map 'Dynamic $ :: 'Map 'Tag 'Dynamic
+        'store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def store
             {}
               :states $ {}
@@ -551,14 +622,33 @@
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.schema
     'app.updater $ %{} 'FileEntry
-      :defs $ {} $ 'updater
-        %{} 'CodeEntry (:doc |)
+      :defs $ {}
+        'update-wire-store $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn update-wire-store (store op op-id op-time)
+            if (enum? op)
+              updater
+                decode-map-as store $ :: 'Map 'Tag 'Dynamic
+                , op (decode-map-as op-id 'String) (decode-map-as op-time 'Number)
+              raise |Expected-Enum-operation
+          :examples $ []
+          :schema $ :: 'Fn $ {}
+            :args $ [] 'Dynamic 'Dynamic 'Dynamic 'Dynamic
+            :return $ :: 'Map 'Tag 'Dynamic
+        'updater $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn updater (store op op-id op-time)
             match op
-              (:states cursor s) (update-states store cursor s)
-              (:records op-data) (assoc store :records op-data)
-              (:router op-data) (assoc store :router op-data)
-              (:hydrate-storage op-data) op-data
+              (:states cursor s)
+                decode-map-as
+                  update-states store
+                    decode-map-as cursor $ :: 'List 'Dynamic
+                    , s
+                  :: 'Map 'Tag 'Dynamic
+              (:records op-data)
+                assoc store :records $ app.schema/read-records op-data
+              (:router op-data)
+                assoc store :router $ decode-map-as op-data $ :: 'Map 'Tag 'Dynamic
+              (:hydrate-storage op-data)
+                decode-map-as op-data $ :: 'Map 'Tag 'Dynamic
               _ $ do (eprintln "|Unknown op:" op) store
           :examples $ []
           :schema $ :: 'Fn $ {}
@@ -591,14 +681,14 @@
                   cursor $
                     first text
                     , .unwrap
-                case-default cursor
-                  recur acc (str buffer cursor) (.slice text 1)
+                match cursor
                   "| " $ recur
                     if (.blank? buffer) acc $ conj acc buffer
                     , | $ .slice text 1
                   |, $ recur
                     if (.blank? buffer) acc $ conj acc buffer
                     , | $ .slice text 1
+                  _ $ recur acc (str buffer cursor) (.slice text 1)
           :examples $ []
           :schema $ :: 'Fn $ {}
             :args $ [] (:: 'List 'String) 'String 'String
@@ -611,11 +701,11 @@
                   cursor $
                     first text
                     , .unwrap
-                case-default cursor
-                  recur acc (str buffer cursor) (.slice text 1)
+                match cursor
                   |, $ recur
                     if (.blank? buffer) acc $ conj acc buffer
                     , | $ trim-left (.slice text 1)
+                  _ $ recur acc (str buffer cursor) (.slice text 1)
           :examples $ []
           :schema $ :: 'Fn $ {}
             :args $ [] (:: 'List 'String) 'String 'String
