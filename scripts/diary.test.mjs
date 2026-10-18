@@ -10,10 +10,10 @@ import { comp_editor } from '../js-out/app.comp.editor.mjs';
 import { comp_food_analysis } from '../js-out/app.comp.food-analysis.mjs';
 import { comp_place_analysis } from '../js-out/app.comp.place-analysis.mjs';
 import { updater } from '../js-out/app.updater.mjs';
-import { component_$q_, component_tree } from '../js-out/respo.util.detect.mjs';
+import { component_$q_, component_tree, render_node_value } from '../js-out/respo.util.detect.mjs';
 import { make_string } from '../js-out/respo.render.html.mjs';
 
-const t = c.init_tags(['date', 'time', 'food', 'place', 'name', 'home', 'data', 'records', 'router', 'states', 'event', 'children', 'click', 'store']);
+const t = c.init_tags(['date', 'time', 'food', 'place', 'name', 'home', 'data', 'records', 'router', 'states', 'event', 'children', 'click', 'store', 'node']);
 const map = c._$n__$M_;
 const field = (value, key) => c.option_$o_unwrap(c.get(value, key));
 const nth = (value, index) => c.option_$o_unwrap(c.nth(value, index));
@@ -31,7 +31,9 @@ function clickHandler(node, label) {
   if (c.option_$o_some_$q_(children)) {
     const pairs = c.option_$o_unwrap(children);
     for (let i = 0; i < c.count(pairs); i++) {
-      const handler = clickHandler(nth(nth(pairs, i), 1), label);
+      const child = field(nth(pairs, i), t.node);
+      if (!c.option_$o_some_$q_(child)) continue;
+      const handler = clickHandler(render_node_value(c.option_$o_unwrap(child)), label);
       if (handler) return handler;
     }
   }
@@ -70,7 +72,14 @@ test('Analyze round-trips the editor text and dispatches Enum operations', () =>
 test('manual JSON import and storage preserve the diary-viewer key without reading files', async () => {
   const saved = new Map();
   globalThis.document = { querySelector: () => ({}) };
-  globalThis.localStorage = { setItem: (key, value) => saved.set(key, value) };
+  globalThis.localStorage = {
+    get length() { return saved.size; },
+    getItem: (key) => saved.get(key) ?? null,
+    setItem: (key, value) => { saved.set(key, value); },
+    removeItem: (key) => { saved.delete(key); },
+    clear: () => { saved.clear(); },
+    key: (index) => [...saved.keys()][index] ?? null,
+  };
   globalThis.window = { localStorage: globalThis.localStorage };
   const main = await import('../js-out/app.main.mjs');
   main.load_records_$x_('{"2021-01-01":{"date":"2021-01-01","time":1609502400000,"food":"rice"}}');
