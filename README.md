@@ -8,7 +8,7 @@ Diary Viewer
 
 Workflow https://github.com/calcit-lang/respo-calcit-workflow
 
-使用已发布的配对 Calcit/procs **0.30.1-alpha.4**（预发布，不是正式 0.30.1）、
+使用已发布的配对 Calcit/procs **0.30.1-alpha.5**（预发布，不是正式 0.30.1）、
 Caps 0.1.1、Node.js 24 和 Yarn 4.18.0。模块使用正式 Respo 0.16.122、
 UI 0.7.41、Reel 0.6.39、js-ffi 0.2.3。
 
@@ -38,7 +38,12 @@ yarn dev
 
 ### 限制
 
-alpha.4 的公开 frequencies 被完整 strict 拒绝，见 [Calcit #2149](https://github.com/calcit-lang/calcit/issues/2149)；普通检查和运行回归通过不代表该迁移已完成严格验收，仍需包含上游修复的已发布配对工具链。
+alpha.4 的公开 frequencies 完整 strict 问题已由上游修复并随配对 alpha.5 发布，见
+[Calcit #2149](https://github.com/calcit-lang/calcit/issues/2149)。alpha.5 下完整 strict 为0诊断、
+0迁移建议，全部216/216定义、原有4/4 Node业务回归和JS/Vite构建通过，未改应用源码或放宽门禁。
+浏览器重新使用两条内联合成日记验收手动导入、2021食物重复计数（2 rice / 1 noodle）和地点
+筛选（City Park / Train Station，排除其他年份）；没有读取真实日记、开启自动加载/持久化或
+出现控制台warning/error。干净依赖安装和COS结果仍以PR最新提交CI为准，未合并或部署生产。
 
 ### License
 
