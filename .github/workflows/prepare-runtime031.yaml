@@ -1,0 +1,41 @@
+name: Prepare isolated runtime acceptance
+on:
+  push:
+    branches: [prepare/diary-viewer-runtime031]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6.5.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: corepack enable && corepack prepare yarn@4.18.0 --activate
+      - uses: calcit-lang/setup-calcit@v1.5.0
+        with:
+          tools: calcit,caps
+          caps-version: "0.1.1"
+          deps-file: deps.cirru
+      - name: Build exact source with local resource paths
+        env:
+          VITE_BASE_URL: ./
+        run: |
+          set -euo pipefail
+          test "$(git hash-object calcit.cirru)" = 8357cde38df821c6cfbc605637498810d7be9a61
+          caps --strict --ci
+          yarn install --immutable
+          caps verify --toolchain
+          yarn build
+          yarn test
+          git diff --exit-code -- calcit.cirru
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: local-runtime-${{ github.run_id }}-${{ github.run_attempt }}
+          path: dist
+          if-no-files-found: error
+          retention-days: 7
