@@ -8,9 +8,9 @@ Diary Viewer
 
 Workflow https://github.com/calcit-lang/respo-calcit-workflow
 
-使用已发布的配对 Calcit/procs **0.30.1-alpha.5**（预发布，不是正式 0.30.1）、
-Caps 0.1.1、Node.js 24 和 Yarn 4.18.0。模块使用正式 Respo 0.16.122、
-UI 0.7.41、Reel 0.6.39、js-ffi 0.2.3。
+使用配对的正式 Calcit/procs **0.30.1**、Caps 0.1.1、Node.js 24 和 Yarn 4.18.0。
+模块使用精确正式 tag：Respo 0.16.124、UI 0.8.0、Reel 0.6.41、js-ffi 0.2.5。
+升级后重启开发服务并刷新页面，不混用旧 runtime。
 
 ```sh
 caps --strict --ci
@@ -37,6 +37,11 @@ yarn dev
 日记通过编辑器粘贴 Cirru EDN 导入，编辑器初始文本也使用相同格式。未启用自动加载或持久化；可显式调用 `load-records!` 并传入 JSON 文本，或调用 `persist-storage!` 写入原有 `diary-viewer` 存储键。构建不读取或打包本地 `data/diary.json`。
 
 ### 限制
+
+本轮迁移 36 处旧 Option helper 到 `.unwrap` / `.unwrap-or`，保留原 Map/schema、默认值、
+四项 Node 业务回归和所有原错误行为；不新增强转、预算或验证脚本。源码修改在仍匹配原 alpha.5 的
+官方编辑器中通过 dry-run/scoped revision 完成，之后才升级声明。正式版 CI 与实际手动导入验收尚待完成，
+下面的 alpha.5 历史结果不作为本轮正式版通过证据。
 
 alpha.4 的公开 frequencies 完整 strict 问题已由上游修复并随配对 alpha.5 发布，见
 [Calcit #2149](https://github.com/calcit-lang/calcit/issues/2149)。alpha.5 下完整 strict 为0诊断、

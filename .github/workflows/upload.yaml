@@ -38,18 +38,20 @@ jobs:
 
     - name: Resolve fixed dependencies
       run: |
+        set -euo pipefail
         caps --strict --ci
         yarn install --immutable
         caps verify --toolchain
 
     - name: Check Calcit source
       run: |
+        set -euo pipefail
         test ! -e compact.cirru
         test ! -e package.cirru
         calcit calcit.cirru edit format
         git diff --exit-code -- calcit.cirru
         calcit calcit.cirru --check-only --all-defs
-        calcit calcit.cirru fix --workflow strict --verify
+        calcit calcit.cirru fix --workflow strict --verify --format json | jq -e '.data.workflow.status == "passed" and .diagnostics == []'
 
     - name: Select frontend CDN path
       id: assets
@@ -67,6 +69,7 @@ jobs:
 
     - name: Build and test frontend
       run: |
+        set -euo pipefail
         yarn build
         yarn test
 
