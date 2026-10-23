@@ -14,15 +14,15 @@
           :code $ quote $ defcomp comp-container (reel)
             let
                 store $ decode-map-as
-                  option:unwrap $ get reel :store
+                  .unwrap $ get reel :store
                   :: 'Map 'Tag 'Dynamic
                 states $ decode-map-as
-                  option:unwrap $ get store :states
+                  .unwrap $ get store :states
                   :: 'Map 'Dynamic 'Dynamic
                 router $ decode-map-as
-                  option:unwrap $ get store :router
+                  .unwrap $ get store :router
                   :: 'Map 'Tag 'Dynamic
-                records $ app.schema/read-records $ option:unwrap (get store :records)
+                records $ app.schema/read-records $ .unwrap (get store :records)
               div
                 {} $ :style $ merge ui/global ui/fullscreen ui/column
                 div
@@ -32,14 +32,14 @@
                   render-entry |Editor :editor router
                 match
                   or
-                    option:unwrap-or (get router :name) nil
+                    .unwrap-or (get router :name) nil
                     , :home
                   :home $ comp-viewer (>> states :viewer) records
                   :editor $ comp-editor (>> states :editor) records
                   :food-analysis $ comp-food-analysis records router
                   :place-analysis $ comp-place-analysis records router
                   _ $ div ({})
-                    <> $ str |Else $ option:unwrap-or (get store :page) nil
+                    <> $ str |Else $ .unwrap-or (get store :page) nil
                 when dev? $ comp-reel (>> states :reel) reel $ {}
                 when dev? $ comp-inspect |store store $ {} (:bottom 0)
           :examples $ []
@@ -58,7 +58,7 @@
                     :font-family ui/font-fancy
                   if
                     let
-                        route $ option:unwrap-or (get router :name) nil
+                        route $ .unwrap-or (get router :name) nil
                       if (tag? route) (= code route) false
                     {} $ :color $ hsl 0 0 30
                     {}
@@ -85,11 +85,11 @@
           :code $ quote $ defcomp comp-editor (states records)
             let
                 cursor $ decode-map-as
-                  option:unwrap-or (get states :cursor) ([])
+                  .unwrap-or (get states :cursor) ([])
                   :: 'List 'Dynamic
                 state $ decode-map-as
                   or
-                    option:unwrap-or (get states :data) nil
+                    .unwrap-or (get states :data) nil
                     {} $ :text $ format-cirru-edn records
                   :: 'Map 'Tag 'Dynamic
               div
@@ -98,13 +98,13 @@
                 textarea $ {}
                   :style $ merge ui/textarea $ {} (:width |100%) (:height |80%) (:font-family ui/font-code) (:font-size 12) (:padding-bottom 200)
                   :value $ decode-map-as
-                    option:unwrap $ get state :text
+                    .unwrap $ get state :text
                     , 'String
                   :placeholder "|EDN piece of diaries storage, keys are dates"
                   :on-input $ fn (e d!)
                     d! $ :: :states cursor $ assoc state :text
                       decode-map-as
-                        option:unwrap $ get
+                        .unwrap $ get
                           decode-map-as e $ :: 'Map 'Tag 'Dynamic
                           , :value
                         , 'String
@@ -114,7 +114,7 @@
                     :on-click $ fn (e d!)
                       d! $ :: :records $ parse-cirru-edn
                         decode-map-as
-                          option:unwrap $ get state :text
+                          .unwrap $ get state :text
                           , 'String
                       d! $ :: :states cursor nil
                       d! $ :: :router $ {} (:name :home)
@@ -138,12 +138,12 @@
                     fn (entry) entry.:value
                   filter $ fn (day-info)
                     if
-                      non-nil? $ option:unwrap-or (get router :data) nil
+                      non-nil? $ .unwrap-or (get router :data) nil
                       =
                         decode-map-as
-                          option:unwrap-or (get router :data) nil
+                          .unwrap-or (get router :data) nil
                           , 'Number
-                        get-year $ option:unwrap-or (get day-info :time) nil
+                        get-year $ .unwrap-or (get day-info :time) nil
                       , true
                   map $ fn (x)
                     decode-map-as
@@ -168,7 +168,7 @@
                   {} $ :style $ {}
                   <>
                     str "|Foods of " $ or
-                      option:unwrap-or (get router :data) nil
+                      .unwrap-or (get router :data) nil
                       , |all
                     {} $ :font-family ui/font-fancy
                 list->
@@ -206,12 +206,12 @@
                     fn (entry) entry.:value
                   filter $ fn (day-info)
                     if
-                      non-nil? $ option:unwrap-or (get router :data) nil
+                      non-nil? $ .unwrap-or (get router :data) nil
                       =
                         decode-map-as
-                          option:unwrap-or (get router :data) nil
+                          .unwrap-or (get router :data) nil
                           , 'Number
-                        get-year $ option:unwrap-or (get day-info :time) nil
+                        get-year $ .unwrap-or (get day-info :time) nil
                       , true
                   map $ fn (x)
                     decode-map-as
@@ -236,7 +236,7 @@
                   {} $ :style $ {}
                   <>
                     str "|Places of " $ or
-                      option:unwrap-or (get router :data) nil
+                      .unwrap-or (get router :data) nil
                       , |all
                     {} $ :font-family ui/font-fancy
                 list->
@@ -294,11 +294,11 @@
           :code $ quote $ defcomp comp-viewer (states records)
             let
                 cursor $ decode-map-as
-                  option:unwrap-or (get states :cursor) ([])
+                  .unwrap-or (get states :cursor) ([])
                   :: 'List 'Dynamic
                 state $ decode-map-as
                   or
-                    option:unwrap-or (get states :data) nil
+                    .unwrap-or (get states :data) nil
                     {} $ :tag :food
                   :: 'Map 'Tag 'Dynamic
               div
@@ -317,7 +317,7 @@
                         [] tag $ span $ {}
                           :style $ merge style-tag $ if
                             = tag $ decode-map-as
-                              option:unwrap $ get state :tag
+                              .unwrap $ get state :tag
                               , 'Tag
                             {} $ :background-color $ hsl 200 80 70
                             {}
@@ -325,7 +325,7 @@
                           :on-click $ fn (e d!)
                             d! $ :: :states cursor $ assoc state :tag tag
                   comp-filter-buttons $ decode-map-as
-                    option:unwrap $ get state :tag
+                    .unwrap $ get state :tag
                     , 'Tag
                 list->
                   {} $ :style $ merge ui/expand
@@ -334,14 +334,14 @@
                     map (map-entries records)
                       fn (entry) entry.:value
                     filter $ fn (info)
-                      non-nil? $ option:unwrap-or
+                      non-nil? $ .unwrap-or
                         get info $ decode-map-as
-                          option:unwrap $ get state :tag
+                          .unwrap $ get state :tag
                           , 'Tag
                         , nil
                     group-by $ fn (info)
                       week-key $ decode-map-as
-                        option:unwrap $ get info :date
+                        .unwrap $ get info :date
                         , 'String
                     .to-list
                     sort $ fn (p1 p2)
@@ -370,11 +370,11 @@
                             div $ {}
                               :style $ {} $ :font-family ui/font-fancy
                               :inner-text $ decode-map-as
-                                option:unwrap-or
+                                .unwrap-or
                                   get
                                       first $ days-info .sort-by $ fn (day)
                                         decode-map-as
-                                          option:unwrap $ get day :date
+                                          .unwrap $ get day :date
                                           , 'String
                                       , .unwrap
                                     , :date
@@ -385,17 +385,17 @@
                               -> days-info
                                 .sort-by $ fn (info)
                                   decode-map-as
-                                    option:unwrap $ get info :date
+                                    .unwrap $ get info :date
                                     , 'String
                                 map $ fn (info)
                                   []
                                     decode-map-as
-                                      option:unwrap $ get info :date
+                                      .unwrap $ get info :date
                                       , 'String
                                     let
-                                        content $ option:unwrap-or
+                                        content $ .unwrap-or
                                           get info $ decode-map-as
-                                            option:unwrap $ get state :tag
+                                            .unwrap $ get state :tag
                                             , 'Tag
                                           , nil
                                       if (non-nil? content)
@@ -406,7 +406,7 @@
                                               :padding |8px
                                           <>
                                             weekday $ decode-map-as
-                                              option:unwrap $ get info :date
+                                              .unwrap $ get info :date
                                               , 'String
                                             {}
                                               :color $ hsl 0 0 80
@@ -544,7 +544,7 @@
             :args $ []
         'mount-target $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def mount-target
-            option:unwrap $ respo.ffi.browser/query-selector |.app
+            .unwrap $ respo.ffi.browser/query-selector |.app
           :examples $ []
           :schema $ :: 'respo.dom/DomElement
         'persist-storage! $ %{} 'CodeEntry (:doc |)
@@ -553,7 +553,7 @@
                 get config/site :storage-key
                 , .unwrap
               format-cirru-edn $ decode-map-as
-                option:unwrap $ get @*reel :store
+                .unwrap $ get @*reel :store
                 :: 'Map 'Tag 'Dynamic
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
