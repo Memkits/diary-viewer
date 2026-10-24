@@ -32,6 +32,12 @@ yarn dev
 原分词、Luxon 周分组、年份筛选和存储行为不变。去除 trimLeft 的 String 强转，
 保留本地 Date/getFullYear 的真实宿主身份边界；不增加业务默认值、缓存或质量预算豁免。
 
+进一步迁移 17 处样式 Map 合并：16 处使用公开 `.merge`，1 处单参数包装直接删除，
+不改样式值和覆盖顺序。年份读取将唯一一处 `unsafe-coerce` 换为 `js-cast` 检查实际
+`getFullYear` 方法，保留同一个原生 Date 对象及本地时区、无效日期行为；不把方法存在检查
+宣称为通用数据/返回类型证明。非法宿主能力可能更早报错；记录格式、筛选、编辑和刷新行为不变。
+原四项 Node 业务回归和部署流程保留，不新增验证脚本、缓存、包装器或类型预算。
+
 部署仅将前端资源上传到 COS。`VITE_BASE_URL` 控制构建资源路径，生产前缀为 `Memkits/diary-viewer/`，PR 使用独立的 PR/run/attempt 路径；配置 `COS_BUCKET`、`COS_SECRET_ID`、`COS_SECRET_KEY` 后由 COS action v1.2.0 自身验证引用与公开内容，不再添加上传校验脚本。原服务器目录 `/web-assets/repo/${github.repository}` 保持不变，PR 不部署服务器。
 
 日记通过编辑器粘贴 Cirru EDN 导入，编辑器初始文本也使用相同格式。未启用自动加载或持久化；可显式调用 `load-records!` 并传入 JSON 文本，或调用 `persist-storage!` 写入原有 `diary-viewer` 存储键。构建不读取或打包本地 `data/diary.json`。

@@ -24,9 +24,9 @@
                   :: 'Map 'Tag 'Dynamic
                 records $ app.schema/read-records $ .unwrap (get store :records)
               div
-                {} $ :style $ merge ui/global ui/fullscreen ui/column
+                {} $ :style $ .merge ui/global ui/fullscreen ui/column
                 div
-                  {} $ :style $ merge ui/row-middle
+                  {} $ :style $ .merge ui/row-middle
                     {} $ :border-bottom $ str "|1px solid " (hsl 0 0 90)
                   render-entry |Home :home router
                   render-entry |Editor :editor router
@@ -51,7 +51,7 @@
               {}
                 :on-click $ fn (e d!)
                   d! $ :: :router $ {} (:name code) (:data nil)
-                :style $ merge
+                :style $ .merge
                   {} (:padding "|0 8px") (:margin "|0 8px") (:cursor :pointer)
                     :color $ hsl 0 0 70
                     :font-size 16
@@ -93,10 +93,10 @@
                     {} $ :text $ format-cirru-edn records
                   :: 'Map 'Tag 'Dynamic
               div
-                {} $ :style $ merge ui/expand
+                {} $ :style $ .merge ui/expand
                   {} $ :padding 16
                 textarea $ {}
-                  :style $ merge ui/textarea $ {} (:width |100%) (:height |80%) (:font-family ui/font-code) (:font-size 12) (:padding-bottom 200)
+                  :style $ .merge ui/textarea $ {} (:width |100%) (:height |80%) (:font-family ui/font-code) (:font-size 12) (:padding-bottom 200)
                   :value $ decode-map-as
                     .unwrap $ get state :text
                     , 'String
@@ -162,7 +162,7 @@
                     not $ .blank? x
                   frequencies
               div
-                {} $ :style $ merge ui/expand ui/column
+                {} $ :style $ .merge ui/expand ui/column
                   {} $ :padding "|8px 16px"
                 div
                   {} $ :style $ {}
@@ -172,7 +172,7 @@
                       , |all
                     {} $ :font-family ui/font-fancy
                 list->
-                  {} $ :style $ merge ui/expand
+                  {} $ :style $ .merge ui/expand
                     {} $ :column-count 10
                   -> (map-entries foods)
                     .sort-by $ fn (entry) negate entry.:value
@@ -230,7 +230,7 @@
                     not $ .blank? x
                   frequencies
               div
-                {} $ :style $ merge ui/expand ui/column
+                {} $ :style $ .merge ui/expand ui/column
                   {} $ :padding "|8px 16px"
                 div
                   {} $ :style $ {}
@@ -240,7 +240,7 @@
                       , |all
                     {} $ :font-family ui/font-fancy
                 list->
-                  {} $ :style $ merge ui/expand
+                  {} $ :style $ .merge ui/expand
                     {} $ :column-count 6
                   -> (map-entries records)
                     .sort-by $ fn (entry) negate entry.:value
@@ -302,20 +302,20 @@
                     {} $ :tag :food
                   :: 'Map 'Tag 'Dynamic
               div
-                {} $ :style $ merge ui/expand ui/column
+                {} $ :style $ .merge ui/expand ui/column
                   {} $ :padding 16
                 div
-                  {} $ :style $ merge ui/row-parted
+                  {} $ :style $ .merge ui/row-parted
                     {} $ :padding-bottom 12
                   div
-                    {} $ :style $ merge ui/row-middle
+                    {} $ :style ui/row-middle
                     <> |Filters
                     =< 16 nil
                     list->
                       {} $ :style ui/row-middle
                       -> tags $ map $ fn (tag)
                         [] tag $ span $ {}
-                          :style $ merge style-tag $ if
+                          :style $ .merge style-tag $ if
                             = tag $ decode-map-as
                               .unwrap $ get state :tag
                               , 'Tag
@@ -328,7 +328,7 @@
                     .unwrap $ get state :tag
                     , 'Tag
                 list->
-                  {} $ :style $ merge ui/expand
+                  {} $ :style $ .merge ui/expand
                     {} $ :border-top $ str "|1px solid " (hsl 0 0 80)
                   ->
                     map (map-entries records)
@@ -381,7 +381,7 @@
                                   , nil
                                 , 'String
                             list->
-                              {} $ :style $ merge ui/row ({})
+                              {} $ :style $ .merge ui/row ({})
                               -> days-info
                                 .sort-by $ fn (info)
                                   decode-map-as
@@ -400,7 +400,7 @@
                                           , nil
                                       if (non-nil? content)
                                         div
-                                          {} $ :style $ merge ui/expand
+                                          {} $ :style $ .merge ui/expand
                                             {}
                                               :border-left $ str "|1px solid " $ hsl 0 0 80
                                               :padding |8px
@@ -414,7 +414,7 @@
                                               :font-size 12
                                               :font-family ui/font-fancy
                                           <> $ str content
-                                        <> |nothing $ merge ui/expand $ {}
+                                        <> |nothing $ .merge ui/expand $ {}
                                           :border-left $ str "|1px solid " $ hsl 0 0 80
                                           :padding |8px
                                           :color $ hsl 0 0 80
@@ -656,7 +656,7 @@
         %{} 'CodeEntry (:doc |)
           :code $ quote $ defn get-year (x)
             let
-                d $ unsafe-coerce (new js/Date x) 'app.js-adapter/DateYearHost
+                d $ js-cast (new js/Date x) 'app.js-adapter/DateYearHost
               d .get-full-year
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Number)
