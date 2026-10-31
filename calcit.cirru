@@ -6,7 +6,7 @@
     {} (:description |) (:init-fn 'app.main/main!) (:mode :js) (:reload-fn 'app.main/reload!) (:target :browser)
       :feature-policy $ {}
       :modules $ [] |respo.calcit/ |respo-ui.calcit/ |reel.calcit/ |js-ffi/
-      :type-slots $ {}
+      :type-slots $ {} $ :dispatch-op |app.schema/DispatchOp
   :files $ {}
     'app.comp.container $ %{} 'FileEntry
       :defs $ {}
@@ -43,8 +43,7 @@
                 when dev? $ comp-reel (>> states :reel) reel $ {}
                 when dev? $ comp-inspect |store store $ {} (:bottom 0)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] $ :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Fn (Map Tag Dynamic) (-> respo.schema/Component)
         'render-entry $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-entry (title code router)
             div
@@ -64,8 +63,7 @@
                     {}
               <> title
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'respo.schema/Element)
-            :args $ [] 'String 'Tag $ :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Fn String Tag (Map Tag Dynamic) (-> respo.schema/Element)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.container
           :require
@@ -119,9 +117,9 @@
                       d! $ :: :states cursor nil
                       d! $ :: :router $ {} (:name :home)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] (:: 'Map 'Dynamic 'Dynamic)
-              :: 'Map 'Dynamic $ :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Fn (Map Dynamic Dynamic)
+            Map Dynamic $ Map Tag Dynamic
+            -> respo.schema/Component
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.editor
           :require
@@ -151,14 +149,10 @@
                         , .unwrap-or |
                       , 'String
                   mapcat $ fn (chunk)
-                    hint-fn $ {}
-                      :args $ [] 'String
-                      :return $ :: 'List 'String
+                    hint-fn $ Fn String $ -> (List String)
                     split-words ([]) | chunk
                   filter $ fn (x)
-                    hint-fn $ {}
-                      :args $ [] 'String
-                      :return 'Bool
+                    hint-fn $ Fn String $ -> Bool
                     not $ .blank? x
                   frequencies
               div
@@ -184,10 +178,10 @@
                             :color $ hsl 0 0 70
                         <> entry.:key $ {} (:font-size 12) (:white-space :nowrap)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ []
-              :: 'Map 'Dynamic $ :: 'Map 'Tag 'Dynamic
-              :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Fn
+            Map Dynamic $ Map Tag Dynamic
+            Map Tag Dynamic
+            -> respo.schema/Component
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.food-analysis
           :require
@@ -219,14 +213,10 @@
                         , .unwrap-or |
                       , 'String
                   mapcat $ fn (chunk)
-                    hint-fn $ {}
-                      :args $ [] 'String
-                      :return $ :: 'List 'String
+                    hint-fn $ Fn String $ -> (List String)
                     split-words-comma ([]) | chunk
                   filter $ fn (x)
-                    hint-fn $ {}
-                      :args $ [] 'String
-                      :return 'Bool
+                    hint-fn $ Fn String $ -> Bool
                     not $ .blank? x
                   frequencies
               div
@@ -252,10 +242,10 @@
                             :color $ hsl 0 0 70
                         <> entry.:key $ {} (:font-size 12) (:white-space :nowrap)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ []
-              :: 'Map 'Dynamic $ :: 'Map 'Tag 'Dynamic
-              :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Fn
+            Map Dynamic $ Map Tag Dynamic
+            Map Tag Dynamic
+            -> respo.schema/Component
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.place-analysis
           :require
@@ -288,8 +278,7 @@
                   :on-click $ fn (e d!)
                     d! $ :: :router $ {} (:name new-page) (:data 2018)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] 'Tag
+          :schema $ quote $ Fn Tag (-> respo.schema/Component)
         'comp-viewer $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-viewer (states records)
             let
@@ -420,9 +409,9 @@
                                           :color $ hsl 0 0 80
                                           :font-family ui/font-fancy
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] (:: 'Map 'Dynamic 'Dynamic)
-              :: 'Map 'Dynamic $ :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Fn (Map Dynamic Dynamic)
+            Map Dynamic $ Map Tag Dynamic
+            -> respo.schema/Component
         'style-tag $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-tag
             {}
@@ -433,11 +422,11 @@
               :color :white
               :cursor :pointer
           :examples $ []
-          :schema $ :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Map Tag Dynamic
         'tags $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def tags ([] :food :mood :place :met :highlight :exercise)
           :examples $ []
-          :schema $ :: 'List 'Tag
+          :schema $ quote $ List Tag
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.viewer
           :require
@@ -454,31 +443,27 @@
               get-env |mode
               , .unwrap-or |release
           :examples $ []
-          :schema $ :: 'Bool
+          :schema $ quote Bool
         'site $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def site
             {} (:dev-ui |http://localhost:8100/main-fonts.css) (:release-ui |http://cdn.tiye.me/favored-fonts/main-fonts.css) (:cdn-url |https://cos-sh.tiye.me/Memkits/diary-viewer/) (:title "|Diary Viewer") (:icon |http://cdn.tiye.me/logo/memkits.png) (:storage-key |diary-viewer)
           :examples $ []
-          :schema $ :: 'Map 'Tag 'String
+          :schema $ quote $ Map Tag String
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.config
     'app.js-adapter $ %{} 'FileEntry
       :defs $ {}
         'DateYearHost $ %{} 'CodeEntry (:doc |)
           :code $ quote $ deftrait DateYearHost
-            .get-full-year $ :: 'Fn $ {}
-              :args $ [] 'app.js-adapter/DateYearHost
-              :return 'Number
+            .get-full-year $ quote $ Fn app.js-adapter/DateYearHost (-> Number)
           :examples $ []
           :ffi $ {} (:backend :js) (:kind :external-object)
-          :schema $ :: 'Trait
+          :schema $ quote Trait
         'trim-left $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn trim-left (text)
             js-ffi.contract/expect-string |trimLeft $ .!trimLeft text
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'String)
-            :args $ [] 'String
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn String (-> String) (:features :js-ffi)
         'week-key $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn week-key (date) (raise "|JavaScript host required")
           :examples $ []
@@ -486,9 +471,7 @@
             :js $ {}
               :inline "|(date) => { const time = luxon.DateTime.fromISO(date); return String(time.year) + '-' + String(Math.floor(time.ordinal / 7)).padStart(2, '0'); }"
               :modules $ {} $ :luxon |luxon
-          :schema $ :: 'Fn $ {} (:return 'String)
-            :args $ [] 'String
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn String (-> String) (:features :js-ffi)
         'weekday $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn weekday (date) (raise "|JavaScript host required")
           :examples $ []
@@ -496,9 +479,7 @@
             :js $ {}
               :inline "|(date) => luxon.DateTime.fromISO(date).toFormat('EEE')"
               :modules $ {} $ :luxon |luxon
-          :schema $ :: 'Fn $ {} (:return 'String)
-            :args $ [] 'String
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn String (-> String) (:features :js-ffi)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.js-adapter
     'app.main $ %{} 'FileEntry
@@ -507,21 +488,19 @@
           :code $ quote $ defref *reel
             -> reel-schema/reel (assoc :base schema/store) (assoc :store schema/store)
           :examples $ []
-          :schema $ :: 'Ref $ :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Ref (Map Tag Dynamic)
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op)
             when config/dev? $ println |Dispatch: op
             reset! *reel $ reel-updater app.updater/update-wire-store @*reel op
             , &unit
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ [] 'Enum
+          :schema $ quote $ Fn Enum (-> Unit)
         'dispatch-wire! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch-wire! (op)
             if (enum? op) (dispatch! op) (raise |Expected-Enum-operation)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ [] 'Dynamic
+          :schema $ quote $ Fn Dynamic (-> Unit)
         'load-records! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn load-records! (source)
             match (source .parse-json)
@@ -529,8 +508,7 @@
                 dispatch! $ :: :records data
               (:err message) (raise message)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ [] 'String
+          :schema $ quote $ Fn String (-> Unit)
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! ()
             println "|Running mode:" $ if config/dev? |dev |release
@@ -540,13 +518,12 @@
             println "|App started."
             , &unit
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ []
+          :schema $ quote $ Fn (-> Unit)
         'mount-target $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def mount-target
             .unwrap $ respo.ffi.browser/query-selector |.app
           :examples $ []
-          :schema $ :: 'respo.dom/DomElement
+          :schema $ quote respo.dom/DomElement
         'persist-storage! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn persist-storage! ()
             browser/storage-set!
@@ -556,8 +533,7 @@
                 .unwrap $ get @*reel :store
                 :: 'Map 'Tag 'Dynamic
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ []
+          :schema $ quote $ Fn (-> Unit)
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! () (remove-watch! *reel :changes) (clear-cache!)
             add-watch! *reel :changes $ fn (reel prev) (render-app!)
@@ -565,14 +541,12 @@
             println |Code-updated.
             , &unit
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ []
+          :schema $ quote $ Fn (-> Unit)
         'render-app! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-app! ()
             render! mount-target (comp-container @*reel) dispatch-wire!
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ []
+          :schema $ quote $ Fn (-> Unit)
         'repeat! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn repeat! (duration cb)
             browser/set-timeout!
@@ -580,10 +554,9 @@
               * 1000 duration
             , &unit
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ [] 'Number $ :: 'Fn
-              {} (:return 'Unit)
-                :args $ []
+          :schema $ quote $ Fn Number
+            Fn $ -> Unit
+            -> Unit
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.main
           :require
@@ -598,13 +571,18 @@
             js-ffi.browser :as browser
     'app.schema $ %{} 'FileEntry
       :defs $ {}
+        'DispatchOp $ %{} 'CodeEntry
+          :doc "|为只接受 definition 路径的入口 dispatch-op 槽声明现有原始 Enum 合同。该代表值不会派发，也不是新的名义业务 Op；真实事件仍由原 updater 与边界解码检查。"
+          :code $ quote $ def DispatchOp
+            :: :states ([]) ({})
+          :examples $ []
+          :schema $ quote Enum
         'read-records $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn read-records (value)
             decode-map-as value $ :: 'Map 'Dynamic $ :: 'Map 'Tag 'Dynamic
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] 'Dynamic
-            :return $ :: 'Map 'Dynamic $ :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Fn Dynamic
+            -> $ Map Dynamic $ Map Tag Dynamic
         'store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def store
             {}
@@ -612,7 +590,7 @@
               :records $ {}
               :router $ {} (:name :home) (:data nil)
           :examples $ []
-          :schema $ :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Map Tag Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.schema
     'app.updater $ %{} 'FileEntry
@@ -625,9 +603,8 @@
                 , op (decode-map-as op-id 'String) (decode-map-as op-time 'Number)
               raise |Expected-Enum-operation
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] 'Dynamic 'Dynamic 'Dynamic 'Dynamic
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Fn Dynamic Dynamic Dynamic Dynamic
+            -> $ Map Tag Dynamic
         'updater $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn updater (store op op-id op-time)
             match op
@@ -645,9 +622,8 @@
                 decode-map-as op-data $ :: 'Map 'Tag 'Dynamic
               _ $ do (eprintln "|Unknown op:" op) store
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Tag 'Dynamic) 'Enum 'String 'Number
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Fn (Map Tag Dynamic) Enum String Number
+            -> $ Map Tag Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater
           :require $ respo.cursor :refer $ update-states
@@ -659,9 +635,7 @@
                 d $ js-cast (new js/Date x) 'app.js-adapter/DateYearHost
               d .get-full-year
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Number)
-            :args $ [] 'Dynamic
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn Dynamic (-> Number) (:features :js-ffi)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.util
           :require $ app.js-adapter :refer $ DateYearHost
@@ -684,9 +658,8 @@
                     , | $ .slice text 1
                   _ $ recur acc (str buffer cursor) (.slice text 1)
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'List 'String) 'String 'String
-            :return $ :: 'List 'String
+          :schema $ quote $ Fn (List String) String String
+            -> $ List String
         'split-words-comma $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn split-words-comma (acc buffer text)
             if (.blank? text)
@@ -701,9 +674,8 @@
                     , | $ trim-left (.slice text 1)
                   _ $ recur acc (str buffer cursor) (.slice text 1)
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'List 'String) 'String 'String
-            :return $ :: 'List 'String
+          :schema $ quote $ Fn (List String) String String
+            -> $ List String
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.util.string
           :require $ app.js-adapter :refer $ trim-left
