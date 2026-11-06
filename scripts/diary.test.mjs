@@ -13,7 +13,7 @@ import { updater } from '../js-out/app.updater.mjs';
 import { component_$q_, component_tree, render_node_value } from '../js-out/respo.util.detect.mjs';
 import { make_string } from '../js-out/respo.render.html.mjs';
 
-const t = c.init_tags(['date', 'time', 'food', 'place', 'name', 'home', 'data', 'records', 'router', 'states', 'event', 'children', 'click', 'store', 'node']);
+const t = c.init_tags(['date', 'time', 'food', 'place', 'name', 'home', 'data', 'records', 'router', 'states', 'event', 'children', 'click', 'store', 'node', 'tag', 'mood']);
 const map = c._$n__$M_;
 const field = (value, key) => c.option_$o_unwrap(c.get(value, key));
 const nth = (value, index) => c.option_$o_unwrap(c.nth(value, index));
@@ -51,6 +51,9 @@ test('word splitting and Luxon week grouping retain their original meaning', () 
 test('viewer and food/place analysis render records and respect the selected year', () => {
   const html = make_string(comp_viewer(map(), records));
   for (const text of ['2021-01-01', 'rice, noodle', '2020-01-01', 'soup']) assert.ok(html.includes(text));
+  assert.ok(html.includes('>Group 2021<'));
+  const mood = make_string(comp_viewer(map(t.data, map(t.tag, t.mood)), records));
+  assert.ok(!mood.includes('>Group 2021<'));
   const router = map(t.name, t.home, t.data, 2021);
   const food = make_string(comp_food_analysis(records, router));
   assert.ok(food.includes('rice') && food.includes('noodle'));
