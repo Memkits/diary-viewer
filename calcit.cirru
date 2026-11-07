@@ -6,16 +6,14 @@
     {} (:description |) (:init-fn 'app.main/main!) (:mode :js) (:reload-fn 'app.main/reload!) (:target :browser)
       :feature-policy $ {}
       :modules $ [] |respo.calcit/ |respo-ui.calcit/ |reel.calcit/ |js-ffi/
-      :type-slots $ {} $ :dispatch-op |app.schema/DispatchOp
+      :type-slots $ {} $ :dispatch-op 'app.schema/DispatchOp
   :files $ {}
     'app.comp.container $ %{} 'FileEntry
       :defs $ {}
         'comp-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-container (reel)
             let
-                store $ decode-map-as
-                  .unwrap $ get reel :store
-                  Map Tag Dynamic
+                store $ :store reel
                 states $ decode-map-as
                   .unwrap $ get store :states
                   Map Dynamic Dynamic
@@ -31,38 +29,42 @@
                   render-entry |Home :home router
                   render-entry |Editor :editor router
                 match
-                  or
-                    .unwrap-or (get router :name) nil
-                    , :home
+                  match (get router :name)
+                    (:some value) (if value value :home)
+                    (:none) :home
                   :home $ comp-viewer (>> states :viewer) records
                   :editor $ comp-editor (>> states :editor) records
-                  :food-analysis $ comp-food-analysis records router
-                  :place-analysis $ comp-place-analysis records router
+                  :food-analysis $ comp-food-analysis records $ app.schema/read-year router
+                  :place-analysis $ comp-place-analysis records $ app.schema/read-year router
                   _ $ div ({})
-                    <> $ str |Else $ .unwrap-or (get store :page) nil
+                    <> $ match (get store :page)
+                      (:some page) (str |Else page)
+                      (:none) (str |Else nil)
                 if dev?
-                  Option :some $ comp-reel (>> states :reel) reel $ {}
+                  Option :some $ comp-typed-reel (>> states :reel) reel $ {}
                   Option :none
                 if dev?
                   Option :some $ comp-inspect |store store $ {} (:bottom 0)
                   Option :none
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) (-> respo.schema/Component)
+          :schema $ quote $ Fn
+            reel.typed/State app.schema/Op $ Map Tag Dynamic
+            -> respo.schema/Component
         'render-entry $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-entry (title code router)
             div
               {}
                 :on-click $ fn (e d!)
-                  d! $ :: :router $ {} (:name code) (:data nil)
+                  d! $ app.schema/Op :navigate code $ Option :none
                 :style $ .merge
                   {} (:padding "|0 8px") (:margin "|0 8px") (:cursor :pointer)
                     :color $ hsl 0 0 70
                     :font-size 16
                     :font-family ui/font-fancy
                   if
-                    let
-                        route $ .unwrap-or (get router :name) nil
-                      if (tag? route) (= code route) false
+                    match (get router :name)
+                      (:some route) (= code route)
+                      (:none) false
                     {} $ :color $ hsl 0 0 30
                     {}
               <> title
@@ -74,13 +76,13 @@
             respo-ui.core :refer $ hsl
             respo-ui.core :as ui
             respo.core :refer $ defcomp >> <> div
-            reel.comp.reel :refer $ comp-reel
             respo.comp.inspect :refer $ comp-inspect
             app.config :refer $ dev?
             app.comp.viewer :refer $ comp-viewer
             app.comp.editor :refer $ comp-editor
             app.comp.food-analysis :refer $ comp-food-analysis
             app.comp.place-analysis :refer $ comp-place-analysis
+            reel.comp.reel :refer $ comp-typed-reel
     'app.comp.editor $ %{} 'FileEntry
       :defs $ {} $ 'comp-editor
         %{} 'CodeEntry (:doc |)
@@ -88,11 +90,13 @@
             let
                 cursor $ decode-map-as
                   .unwrap-or (get states :cursor) ([])
-                  List Dynamic
+                  List respo.schema/CoordKey
                 state $ decode-map-as
-                  or
-                    .unwrap-or (get states :data) nil
-                    {} $ :text $ format-cirru-edn records
+                  match (get states :data)
+                    (:some value)
+                      if value value $ {} $ :text (format-cirru-edn records)
+                    (:none)
+                      {} $ :text $ format-cirru-edn records
                   Map Tag Dynamic
               div
                 {} $ :style $ .merge ui/expand
@@ -104,22 +108,22 @@
                     , 'String
                   :placeholder "|EDN piece of diaries storage, keys are dates"
                   :on-input $ fn (e d!)
-                    d! $ :: :states cursor $ assoc state :text
-                      decode-map-as
-                        .unwrap $ get
-                          decode-map-as e $ Map Tag Dynamic
-                          , :value
-                        , 'String
+                    hint-fn $ Fn respo.schema/RespoEvent
+                      Fn app.schema/Op $ -> Unit
+                      -> Unit
+                    d! $ app.schema/Op :states cursor $ assoc state :text
+                      decode-map-as (:value e) 'String
+                    , &unit
                 div
                   {} $ :style $ {} (:padding "|16px 0")
                   button $ {} (:style ui/button) (:inner-text |Analyze)
                     :on-click $ fn (e d!)
-                      d! $ :: :records $ parse-cirru-edn
-                        decode-map-as
+                      d! $ app.schema/Op :records $ app.schema/read-records
+                        parse-cirru-edn $ decode-map-as
                           .unwrap $ get state :text
                           , 'String
-                      d! $ :: :states cursor nil
-                      d! $ :: :router $ {} (:name :home)
+                      d! $ app.schema/Op :states cursor nil
+                      d! $ app.schema/Op :navigate :home $ Option :none
           :examples $ []
           :schema $ quote $ Fn (Map Dynamic Dynamic)
             Map Dynamic $ Map Tag Dynamic
@@ -133,20 +137,16 @@
     'app.comp.food-analysis $ %{} 'FileEntry
       :defs $ {} $ 'comp-food-analysis
         %{} 'CodeEntry (:doc |)
-          :code $ quote $ defcomp comp-food-analysis (records router)
+          :code $ quote $ defcomp comp-food-analysis (records year)
             let
                 foods $ ->
                   map (map-entries records)
                     fn (entry) entry.:value
                   filter $ fn (day-info)
-                    if
-                      non-nil? $ .unwrap-or (get router :data) nil
-                      =
-                        decode-map-as
-                          .unwrap-or (get router :data) nil
-                          , 'Number
-                        get-year $ .unwrap-or (get day-info :time) nil
-                      , true
+                    match year
+                      (:some selected)
+                        = selected $ get-year $ .unwrap-or (get day-info :time) 0
+                      (:none) true
                   map $ fn (x)
                     decode-map-as
                         get x :food
@@ -165,9 +165,9 @@
                 div
                   {} $ :style $ {}
                   <>
-                    str "|Foods of " $ or
-                      .unwrap-or (get router :data) nil
-                      , |all
+                    str "|Foods of " $ match year
+                      (:some selected) (str selected)
+                      (:none) |all
                     {} $ :font-family ui/font-fancy
                 list->
                   {} $ :style $ .merge ui/expand
@@ -184,7 +184,7 @@
           :examples $ []
           :schema $ quote $ Fn
             Map Dynamic $ Map Tag Dynamic
-            Map Tag Dynamic
+            Option Number
             -> respo.schema/Component
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.food-analysis
@@ -197,20 +197,16 @@
     'app.comp.place-analysis $ %{} 'FileEntry
       :defs $ {} $ 'comp-place-analysis
         %{} 'CodeEntry (:doc |)
-          :code $ quote $ defcomp comp-place-analysis (records router)
+          :code $ quote $ defcomp comp-place-analysis (records year)
             let
                 records $ ->
                   map (map-entries records)
                     fn (entry) entry.:value
                   filter $ fn (day-info)
-                    if
-                      non-nil? $ .unwrap-or (get router :data) nil
-                      =
-                        decode-map-as
-                          .unwrap-or (get router :data) nil
-                          , 'Number
-                        get-year $ .unwrap-or (get day-info :time) nil
-                      , true
+                    match year
+                      (:some selected)
+                        = selected $ get-year $ .unwrap-or (get day-info :time) 0
+                      (:none) true
                   map $ fn (x)
                     decode-map-as
                         get x :place
@@ -229,9 +225,9 @@
                 div
                   {} $ :style $ {}
                   <>
-                    str "|Places of " $ or
-                      .unwrap-or (get router :data) nil
-                      , |all
+                    str "|Places of " $ match year
+                      (:some selected) (str selected)
+                      (:none) |all
                     {} $ :font-family ui/font-fancy
                 list->
                   {} $ :style $ .merge ui/expand
@@ -248,7 +244,7 @@
           :examples $ []
           :schema $ quote $ Fn
             Map Dynamic $ Map Tag Dynamic
-            Map Tag Dynamic
+            Option Number
             -> respo.schema/Component
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.place-analysis
@@ -266,19 +262,19 @@
               {} $ :style ui/row-middle
               a $ {} (:style ui/link) (:inner-text |Group)
                 :on-click $ fn (e d!)
-                  d! $ :: :router $ {} (:name new-page)
+                  d! $ app.schema/Op :navigate new-page $ Option :none
               a $ {} (:style ui/link) (:inner-text "|Group 2021")
                 :on-click $ fn (e d!)
-                  d! $ :: :router $ {} (:name new-page) (:data 2021)
+                  d! $ app.schema/Op :navigate new-page $ Option :some 2021
               a $ {} (:style ui/link) (:inner-text "|Group 2020")
                 :on-click $ fn (e d!)
-                  d! $ :: :router $ {} (:name new-page) (:data 2020)
+                  d! $ app.schema/Op :navigate new-page $ Option :some 2020
               a $ {} (:style ui/link) (:inner-text "|Group 2019")
                 :on-click $ fn (e d!)
-                  d! $ :: :router $ {} (:name new-page) (:data 2019)
+                  d! $ app.schema/Op :navigate new-page $ Option :some 2019
               a $ {} (:style ui/link) (:inner-text "|Group 2018")
                 :on-click $ fn (e d!)
-                  d! $ :: :router $ {} (:name new-page) (:data 2018)
+                  d! $ app.schema/Op :navigate new-page $ Option :some 2018
           :examples $ []
           :schema $ quote $ Fn Tag (-> respo.schema/Component)
         'comp-viewer $ %{} 'CodeEntry (:doc |)
@@ -288,9 +284,11 @@
                   .unwrap-or (get states :cursor) ([])
                   List respo.schema/CoordKey
                 state $ decode-map-as
-                  or
-                    .unwrap-or (get states :data) nil
-                    {} $ :tag :food
+                  match (get states :data)
+                    (:some value)
+                      if value value $ {} $ :tag :food
+                    (:none)
+                      {} $ :tag :food
                   Map Tag Dynamic
               div
                 {} $ :style $ .merge ui/expand ui/column
@@ -314,7 +312,7 @@
                             {}
                           :inner-text tag
                           :on-click $ fn (e d!)
-                            d! $ :: :states cursor $ assoc state :tag tag
+                            d! $ app.schema/Op :states cursor $ assoc state :tag tag
                   match
                     decode-map-as
                       .unwrap $ get state :tag
@@ -329,11 +327,12 @@
                     map (map-entries records)
                       fn (entry) entry.:value
                     filter $ fn (info)
-                      non-nil? $ .unwrap-or
+                      match
                         get info $ decode-map-as
                           .unwrap $ get state :tag
                           , 'Tag
-                        , nil
+                        (:some content) (non-nil? content)
+                        (:none) false
                     group-by $ fn (info)
                       week-key $ decode-map-as
                         .unwrap $ get info :date
@@ -347,15 +346,13 @@
                         div $ {}
                           :style $ {} $ :font-family ui/font-fancy
                           :inner-text $ decode-map-as
-                            .unwrap-or
-                              get
-                                  first $ days-info .sort-by $ fn (day)
-                                    decode-map-as
-                                      .unwrap $ get day :date
-                                      , 'String
-                                  , .unwrap
-                                , :date
-                              , nil
+                            .unwrap $ get
+                                first $ days-info .sort-by $ fn (day)
+                                  decode-map-as
+                                    .unwrap $ get day :date
+                                    , 'String
+                                , .unwrap
+                              , :date
                             , 'String
                         list->
                           {} $ :style $ .merge ui/row ({})
@@ -369,28 +366,33 @@
                                 decode-map-as
                                   .unwrap $ get info :date
                                   , 'String
-                                let
-                                    content $ .unwrap-or
-                                      get info $ decode-map-as
-                                        .unwrap $ get state :tag
-                                        , 'Tag
-                                      , nil
-                                  if (non-nil? content)
-                                    div
-                                      {} $ :style $ .merge ui/expand
-                                        {}
-                                          :border-left $ str "|1px solid " $ hsl 0 0 80
-                                          :padding |8px
-                                      <>
-                                        weekday $ decode-map-as
-                                          .unwrap $ get info :date
-                                          , 'String
-                                        {}
-                                          :color $ hsl 0 0 80
-                                          :margin 8
-                                          :font-size 12
-                                          :font-family ui/font-fancy
-                                      <> $ str content
+                                match
+                                  get info $ decode-map-as
+                                    .unwrap $ get state :tag
+                                    , 'Tag
+                                  (:some content)
+                                    if (non-nil? content)
+                                      div
+                                        {} $ :style $ .merge ui/expand
+                                          {}
+                                            :border-left $ str "|1px solid " $ hsl 0 0 80
+                                            :padding |8px
+                                        <>
+                                          weekday $ decode-map-as
+                                            .unwrap $ get info :date
+                                            , 'String
+                                          {}
+                                            :color $ hsl 0 0 80
+                                            :margin 8
+                                            :font-size 12
+                                            :font-family ui/font-fancy
+                                        <> $ str content
+                                      <> |nothing $ .merge ui/expand $ {}
+                                        :border-left $ str "|1px solid " $ hsl 0 0 80
+                                        :padding |8px
+                                        :color $ hsl 0 0 80
+                                        :font-family ui/font-fancy
+                                  (:none)
                                     <> |nothing $ .merge ui/expand $ {}
                                       :border-left $ str "|1px solid " $ hsl 0 0 80
                                       :padding |8px
@@ -473,17 +475,51 @@
     'app.main $ %{} 'FileEntry
       :defs $ {}
         '*reel $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defref *reel
-            -> reel-schema/reel (assoc :base schema/store) (assoc :store schema/store)
+          :code $ quote $ defref *reel (typed/new-reel schema/store)
           :examples $ []
-          :schema $ quote $ Ref (Map Tag Dynamic)
+          :schema $ quote $ Ref
+            reel.typed/State app.schema/Op $ Map Tag Dynamic
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op)
             when config/dev? $ println |Dispatch: op
-            reset! *reel $ reel-updater app.updater/update-wire-store @*reel op
+            cond
+                = (enum-definition op) (Option :some schema/Op)
+                dispatch-resolved! $ decode-map-as op 'app.schema/Op
+              (= (enum-definition op) (Option :some typed/Control))
+                dispatch-resolved! $ decode-map-as op 'reel.typed/Control
+              true $ match (typed/decode-control op)
+                (:some control) (dispatch-resolved! control)
+                (:none)
+                  match op
+                    (:states cursor data)
+                      dispatch-resolved! $ app.schema/Op :states
+                        decode-map-as cursor $ List respo.schema/CoordKey
+                        , data
+                    (:records data)
+                      dispatch-resolved! $ app.schema/Op :records $ schema/read-records data
+                    (:router data)
+                      let
+                          router $ decode-map-as data $ Map Tag Dynamic
+                        dispatch-resolved! $ app.schema/Op :navigate
+                          decode-map-as
+                            .unwrap-or (get router :name) :home
+                            , 'Tag
+                          schema/read-year router
+                    (:hydrate-storage data)
+                      dispatch-resolved! $ app.schema/Op :hydrate-storage $ decode-map-as data (Map Tag Dynamic)
+                    _ $ eprintln "|Unknown op:" op
             , &unit
           :examples $ []
           :schema $ quote $ Fn AnyEnum (-> Unit)
+        'dispatch-resolved! $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn dispatch-resolved! (op)
+            hint-fn $ Fn app.schema/ResolvedOp (-> Unit) (:features :js-ffi)
+            reset! *reel $ match op
+              (reel.typed/Control control) (typed/apply-control updater @*reel control)
+              (app.schema/Op action)
+                typed/record-op updater @*reel action (generate-id!) (host/now-ms)
+            , &unit
+          :examples $ []
         'dispatch-wire! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch-wire! (op)
             if (enum? op) (dispatch! op) (raise |Expected-Enum-operation)
@@ -493,7 +529,7 @@
           :code $ quote $ defn load-records! (source)
             match (source .parse-json)
               (:ok data)
-                dispatch! $ :: :records data
+                dispatch-resolved! $ app.schema/Op :records $ schema/read-records data
               (:err message) (raise message)
           :examples $ []
           :schema $ quote $ Fn String (-> Unit)
@@ -517,15 +553,13 @@
             browser/storage-set!
                 get config/site :storage-key
                 , .unwrap
-              format-cirru-edn $ decode-map-as
-                .unwrap $ get @*reel :store
-                Map Tag Dynamic
+              format-cirru-edn $ :store @*reel
           :examples $ []
           :schema $ quote $ Fn (-> Unit)
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! () (remove-watch! *reel :changes) (clear-cache!)
             add-watch! *reel :changes $ fn (reel prev) (render-app!)
-            reset! *reel $ decode-map-as (refresh-reel @*reel schema/store app.updater/update-wire-store) (Map Tag Dynamic)
+            reset! *reel $ typed/refresh updater @*reel schema/store
             println |Code-updated.
             , &unit
           :examples $ []
@@ -553,24 +587,46 @@
             app.updater :refer $ updater
             app.schema :as schema
             reel.util :refer $ listen-devtools!
-            reel.core :refer $ reel-updater refresh-reel
-            reel.schema :as reel-schema
             app.config :as config
             js-ffi.browser :as browser
+            reel.typed :as typed
+            js-ffi.shared :as host
     'app.schema $ %{} 'FileEntry
       :defs $ {}
         'DispatchOp $ %{} 'CodeEntry
           :doc "|为只接受 definition 路径的入口 dispatch-op 槽声明现有原始 Enum 合同。该代表值不会派发，也不是新的名义业务 Op；真实事件仍由原 updater 与边界解码检查。"
-          :code $ quote $ def DispatchOp
-            :: :states ([]) ({})
+          :code $ quote $ def DispatchOp (:: :unhandled)
           :examples $ []
           :schema $ quote AnyEnum
+        'Op $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defenum Op
+            :states (List respo.schema/CoordKey) Dynamic
+            :records $ Map Dynamic $ Map Tag Dynamic
+            :navigate Tag $ Option Number
+            :hydrate-storage $ Map Tag Dynamic
+          :examples $ []
+          :schema $ quote EnumDef
+        'ResolvedOp $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defunion ResolvedOp Op reel.typed/Control
+          :examples $ []
+          :schema $ quote UnionDef
         'read-records $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn read-records (value)
             decode-map-as value $ Map Dynamic $ Map Tag Dynamic
           :examples $ []
           :schema $ quote $ Fn Dynamic
             -> $ Map Dynamic $ Map Tag Dynamic
+        'read-year $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn read-year (router)
+            hint-fn $ Fn (Map Tag Dynamic)
+              -> $ Option Number
+            match (get router :data)
+              (:some value)
+                if (non-nil? value)
+                  Option :some $ decode-map-as value 'Number
+                  Option :none
+              (:none) (Option :none)
+          :examples $ []
         'store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def store
             {}
@@ -582,35 +638,22 @@
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.schema
     'app.updater $ %{} 'FileEntry
-      :defs $ {}
-        'update-wire-store $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn update-wire-store (store op op-id op-time)
-            if (enum? op)
-              updater
-                decode-map-as store $ Map Tag Dynamic
-                , op (decode-map-as op-id 'String) (decode-map-as op-time 'Number)
-              raise |Expected-Enum-operation
-          :examples $ []
-          :schema $ quote $ Fn Dynamic Dynamic Dynamic Dynamic
-            -> $ Map Tag Dynamic
-        'updater $ %{} 'CodeEntry (:doc |)
+      :defs $ {} $ 'updater
+        %{} 'CodeEntry (:doc |)
           :code $ quote $ defn updater (store op op-id op-time)
             match op
               (:states cursor s)
-                decode-map-as
-                  update-states store
-                    decode-map-as cursor $ List respo.schema/CoordKey
-                    , s
-                  Map Tag Dynamic
-              (:records op-data)
-                assoc store :records $ app.schema/read-records op-data
-              (:router op-data)
-                assoc store :router $ decode-map-as op-data $ Map Tag Dynamic
-              (:hydrate-storage op-data)
-                decode-map-as op-data $ Map Tag Dynamic
-              _ $ do (eprintln "|Unknown op:" op) store
+                decode-map-as (update-states store cursor s) (Map Tag Dynamic)
+              (:records op-data) (assoc store :records op-data)
+              (:navigate name year)
+                assoc store :router $ match year
+                  (:some selected)
+                    {} (:name name) (:data selected)
+                  (:none)
+                    {} $ :name name
+              (:hydrate-storage op-data) op-data
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) AnyEnum String Number
+          :schema $ quote $ Fn (Map Tag Dynamic) app.schema/Op String Number
             -> $ Map Tag Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.updater
