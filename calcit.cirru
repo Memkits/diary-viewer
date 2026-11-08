@@ -169,13 +169,13 @@
                       (:some selected) (str selected)
                       (:none) |all
                     {} $ :font-family ui/font-fancy
-                list->
+                keyed->
                   {} $ :style $ .merge ui/expand
                     {} $ :column-count 10
                   -> (map-entries foods)
                     .sort-by $ fn (entry) negate entry.:value
                     map $ fn (entry)
-                      [] entry.:key $ div
+                      keyed-element entry.:key $ div
                         {} $ :style $ {} (:padding "|0 8px") (:line-height 1.5)
                         <> (str entry.:value)
                           {} (:margin-right 8) (:font-family ui/font-code) (:font-size 10)
@@ -191,7 +191,7 @@
           :require
             respo-ui.core :refer $ hsl
             respo-ui.core :as ui
-            respo.core :refer $ defcomp list-> <> div
+            respo.core :refer $ defcomp keyed-> keyed-element <> div
             app.util.string :refer $ split-words
             app.util :refer $ get-year
     'app.comp.place-analysis $ %{} 'FileEntry
@@ -229,13 +229,13 @@
                       (:some selected) (str selected)
                       (:none) |all
                     {} $ :font-family ui/font-fancy
-                list->
+                keyed->
                   {} $ :style $ .merge ui/expand
                     {} $ :column-count 6
                   -> (map-entries records)
                     .sort-by $ fn (entry) negate entry.:value
                     map $ fn (entry)
-                      [] entry.:key $ div
+                      keyed-element entry.:key $ div
                         {} $ :style $ {} (:padding "|0 8px") (:line-height 1.5)
                         <> (str entry.:value)
                           {} (:margin-right 8) (:font-family ui/font-code) (:font-size 10)
@@ -251,11 +251,16 @@
           :require
             respo-ui.core :refer $ hsl
             respo-ui.core :as ui
-            respo.core :refer $ defcomp list-> <> div
+            respo.core :refer $ defcomp keyed-> keyed-element <> div
             app.util.string :refer $ split-words-comma
             app.util :refer $ get-year
     'app.comp.viewer $ %{} 'FileEntry
       :defs $ {}
+        'WeekGroup $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstruct WeekGroup (:week String)
+            :days $ List $ Map Tag Dynamic
+          :examples $ []
+          :schema $ quote StructDef
         'comp-filter-buttons $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-filter-buttons (new-page)
             div
@@ -300,10 +305,10 @@
                     {} $ :style ui/row-middle
                     <> |Filters
                     space-x 16
-                    list->
+                    keyed->
                       {} $ :style ui/row-middle
                       -> tags $ map $ fn (tag)
-                        [] tag $ span $ {}
+                        keyed-element tag $ span $ {}
                           :style $ .merge style-tag $ if
                             = tag $ decode-map-as
                               .unwrap $ get state :tag
@@ -320,7 +325,7 @@
                     :food $ Option :some $ comp-filter-buttons :food-analysis
                     :place $ Option :some $ comp-filter-buttons :place-analysis
                     _ $ Option :none
-                list->
+                keyed->
                   {} $ :style $ .merge ui/expand
                     {} $ :border-top $ str "|1px solid " (hsl 0 0 80)
                   ->
@@ -337,67 +342,71 @@
                       week-key $ decode-map-as
                         .unwrap $ get info :date
                         , 'String
-                    .to-list
-                    sort $ fn (p1 p2)
-                      let[] (k1 _) p1 $ let[] (k2 _) p2 $ &compare k1 k2
-                    map $ fn (pair)
-                      let[] (week days-info) pair $ [] week $ div
-                        {} $ :style $ {} (:padding-top 8)
-                        div $ {}
-                          :style $ {} $ :font-family ui/font-fancy
-                          :inner-text $ decode-map-as
-                            .unwrap $ get
-                                first $ days-info .sort-by $ fn (day)
-                                  decode-map-as
-                                    .unwrap $ get day :date
-                                    , 'String
-                                , .unwrap
-                              , :date
-                            , 'String
-                        list->
-                          {} $ :style $ .merge ui/row ({})
-                          -> days-info
-                            .sort-by $ fn (info)
-                              decode-map-as
-                                .unwrap $ get info :date
+                    map-list-kv $ fn (week days) (WeekGroup :week week :days days)
+                    .sort $ fn (a b)
+                      hint-fn $ Fn app.comp.viewer/WeekGroup app.comp.viewer/WeekGroup $ -> Number
+                      &compare (:week a) (:week b)
+                    .map $ fn (group)
+                      let
+                          days-info $ :days group
+                        keyed-element (:week group)
+                          div
+                            {} $ :style $ {} (:padding-top 8)
+                            div $ {}
+                              :style $ {} $ :font-family ui/font-fancy
+                              :inner-text $ decode-map-as
+                                .unwrap $ get
+                                    first $ days-info .sort-by $ fn (day)
+                                      decode-map-as
+                                        .unwrap $ get day :date
+                                        , 'String
+                                    , .unwrap
+                                  , :date
                                 , 'String
-                            map $ fn (info)
-                              []
-                                decode-map-as
-                                  .unwrap $ get info :date
-                                  , 'String
-                                match
-                                  get info $ decode-map-as
-                                    .unwrap $ get state :tag
-                                    , 'Tag
-                                  (:some content)
-                                    if (non-nil? content)
-                                      div
-                                        {} $ :style $ .merge ui/expand
-                                          {}
+                            keyed->
+                              {} $ :style $ .merge ui/row ({})
+                              -> days-info
+                                .sort-by $ fn (info)
+                                  decode-map-as
+                                    .unwrap $ get info :date
+                                    , 'String
+                                map $ fn (info)
+                                  keyed-element
+                                    decode-map-as
+                                      .unwrap $ get info :date
+                                      , 'String
+                                    match
+                                      get info $ decode-map-as
+                                        .unwrap $ get state :tag
+                                        , 'Tag
+                                      (:some content)
+                                        if (non-nil? content)
+                                          div
+                                            {} $ :style $ .merge ui/expand
+                                              {}
+                                                :border-left $ str "|1px solid " $ hsl 0 0 80
+                                                :padding |8px
+                                            <>
+                                              weekday $ decode-map-as
+                                                .unwrap $ get info :date
+                                                , 'String
+                                              {}
+                                                :color $ hsl 0 0 80
+                                                :margin 8
+                                                :font-size 12
+                                                :font-family ui/font-fancy
+                                            <> $ str content
+                                          <> |nothing $ .merge ui/expand $ {}
                                             :border-left $ str "|1px solid " $ hsl 0 0 80
                                             :padding |8px
-                                        <>
-                                          weekday $ decode-map-as
-                                            .unwrap $ get info :date
-                                            , 'String
-                                          {}
                                             :color $ hsl 0 0 80
-                                            :margin 8
-                                            :font-size 12
                                             :font-family ui/font-fancy
-                                        <> $ str content
-                                      <> |nothing $ .merge ui/expand $ {}
-                                        :border-left $ str "|1px solid " $ hsl 0 0 80
-                                        :padding |8px
-                                        :color $ hsl 0 0 80
-                                        :font-family ui/font-fancy
-                                  (:none)
-                                    <> |nothing $ .merge ui/expand $ {}
-                                      :border-left $ str "|1px solid " $ hsl 0 0 80
-                                      :padding |8px
-                                      :color $ hsl 0 0 80
-                                      :font-family ui/font-fancy
+                                      (:none)
+                                        <> |nothing $ .merge ui/expand $ {}
+                                          :border-left $ str "|1px solid " $ hsl 0 0 80
+                                          :padding |8px
+                                          :color $ hsl 0 0 80
+                                          :font-family ui/font-fancy
           :examples $ []
           :schema $ quote $ Fn (Map Dynamic Dynamic)
             Map Dynamic $ Map Tag Dynamic
@@ -422,7 +431,7 @@
           :require
             respo-ui.core :refer $ hsl
             respo-ui.core :as ui
-            respo.core :refer $ defcomp >> list-> <> div span a
+            respo.core :refer $ defcomp >> keyed-> keyed-element <> div span a
             respo.comp.space :refer $ space-x
             app.js-adapter :refer $ week-key weekday
     'app.config $ %{} 'FileEntry
@@ -538,7 +547,7 @@
             println "|Running mode:" $ if config/dev? |dev |release
             render-app!
             add-watch! *reel :changes $ fn (r p) (render-app!)
-            listen-devtools! |k dispatch-wire!
+            listen-devtools-toggle! |k $ fn () $ dispatch-resolved! (reel.typed/Control :toggle)
             println "|App started."
             , &unit
           :examples $ []
@@ -566,7 +575,9 @@
           :schema $ quote $ Fn (-> Unit)
         'render-app! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-app! ()
-            render! mount-target (comp-container @*reel) dispatch-wire!
+            render-with! mount-target
+              fn () $ comp-container @*reel
+              , dispatch-wire!
           :examples $ []
           :schema $ quote $ Fn (-> Unit)
         'repeat! $ %{} 'CodeEntry (:doc |)
@@ -582,11 +593,11 @@
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.main
           :require
-            respo.core :refer $ render! clear-cache!
+            respo.core :refer $ render-with! clear-cache!
             app.comp.container :refer $ comp-container
             app.updater :refer $ updater
             app.schema :as schema
-            reel.util :refer $ listen-devtools!
+            reel.util :refer $ listen-devtools-toggle!
             app.config :as config
             js-ffi.browser :as browser
             reel.typed :as typed
