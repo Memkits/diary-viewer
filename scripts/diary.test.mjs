@@ -10,6 +10,7 @@ import { comp_editor } from '../js-out/app.comp.editor.mjs';
 import { comp_food_analysis } from '../js-out/app.comp.food-analysis.mjs';
 import { comp_place_analysis } from '../js-out/app.comp.place-analysis.mjs';
 import { updater } from '../js-out/app.updater.mjs';
+import { Op, read_year } from '../js-out/app.schema.mjs';
 import { component_$q_, component_tree, render_node_value } from '../js-out/respo.util.detect.mjs';
 import { make_string } from '../js-out/respo.render.html.mjs';
 
@@ -54,11 +55,18 @@ test('viewer and food/place analysis render records and respect the selected yea
   assert.ok(html.includes('>Group 2021<'));
   const mood = make_string(comp_viewer(map(t.data, map(t.tag, t.mood)), records));
   assert.ok(!mood.includes('>Group 2021<'));
-  const router = map(t.name, t.home, t.data, 2021);
-  const food = make_string(comp_food_analysis(records, router));
+  let router;
+  const group = clickHandler(comp_viewer(map(), records), 'Group 2021');
+  assert.equal(typeof group, 'function');
+  group(null, operation => {
+    assert.equal(c.option_$o_unwrap(c.enum_definition(operation)), Op);
+    router = field(updater(map(t.router, map(t.name, t.home)), operation, 'navigation', 0), t.router);
+  });
+  assert.equal(field(router, t.data), 2021);
+  const food = make_string(comp_food_analysis(records, read_year(router)));
   assert.ok(food.includes('rice') && food.includes('noodle'));
   assert.ok(!food.includes('soup'));
-  const place = make_string(comp_place_analysis(records, router));
+  const place = make_string(comp_place_analysis(records, read_year(router)));
   assert.ok(place.includes('City Park') && place.includes('Train Station'));
   assert.ok(!place.includes('Old Town'));
 });
