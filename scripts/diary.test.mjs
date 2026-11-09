@@ -55,6 +55,16 @@ test('viewer and food/place analysis render records and respect the selected yea
   assert.ok(html.includes('>Group 2021<'));
   const mood = make_string(comp_viewer(map(t.data, map(t.tag, t.mood)), records));
   assert.ok(!mood.includes('>Group 2021<'));
+  const sameWeek = map(
+    'late', map(t.date, '2021-01-08', t.food, 0),
+    'early', map(t.date, '2021-01-07', t.food, false),
+    'unselected', map(t.place, 'omit this entry'),
+  );
+  const ordered = make_string(comp_viewer(map(), sameWeek));
+  assert.ok(ordered.includes('>2021-01-07<'));
+  assert.ok(ordered.includes('>false<') && ordered.includes('>0<'));
+  assert.ok(ordered.indexOf('>false<') < ordered.indexOf('>0<'));
+  assert.ok(!ordered.includes('omit this entry'));
   let router;
   const group = clickHandler(comp_viewer(map(), records), 'Group 2021');
   assert.equal(typeof group, 'function');

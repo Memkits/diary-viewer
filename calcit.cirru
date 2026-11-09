@@ -256,9 +256,13 @@
             app.util :refer $ get-year
     'app.comp.viewer $ %{} 'FileEntry
       :defs $ {}
+        'DayEntry $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstruct DayEntry (:date String) (:text String)
+          :examples $ []
+          :schema $ quote StructDef
         'WeekGroup $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstruct WeekGroup (:week String)
-            :days $ List $ Map Tag Dynamic
+            :days $ List app.comp.viewer/DayEntry
           :examples $ []
           :schema $ quote StructDef
         'comp-filter-buttons $ %{} 'CodeEntry (:doc |)
@@ -295,6 +299,9 @@
                     (:none)
                       {} $ :tag :food
                   Map Tag Dynamic
+                selected-tag $ decode-map-as
+                  .unwrap $ get state :tag
+                  , 'Tag
               div
                 {} $ :style $ .merge ui/expand ui/column
                   {} $ :padding 16
@@ -309,19 +316,13 @@
                       {} $ :style ui/row-middle
                       -> tags $ map $ fn (tag)
                         keyed-element tag $ span $ {}
-                          :style $ .merge style-tag $ if
-                            = tag $ decode-map-as
-                              .unwrap $ get state :tag
-                              , 'Tag
+                          :style $ .merge style-tag $ if (= tag selected-tag)
                             {} $ :background-color $ hsl 200 80 70
                             {}
                           :inner-text tag
                           :on-click $ fn (e d!)
                             d! $ app.schema/Op :states cursor $ assoc state :tag tag
-                  match
-                    decode-map-as
-                      .unwrap $ get state :tag
-                      , 'Tag
+                  match selected-tag
                     :food $ Option :some $ comp-filter-buttons :food-analysis
                     :place $ Option :some $ comp-filter-buttons :place-analysis
                     _ $ Option :none
@@ -331,82 +332,57 @@
                   ->
                     map (map-entries records)
                       fn (entry) entry.:value
-                    filter $ fn (info)
-                      match
-                        get info $ decode-map-as
-                          .unwrap $ get state :tag
-                          , 'Tag
-                        (:some content) (non-nil? content)
-                        (:none) false
-                    group-by $ fn (info)
-                      week-key $ decode-map-as
-                        .unwrap $ get info :date
-                        , 'String
+                    .foldl ([])
+                      fn (days info)
+                        hint-fn $ Fn (List app.comp.viewer/DayEntry) (Map Tag Dynamic)
+                          -> $ List app.comp.viewer/DayEntry
+                        match (get info selected-tag)
+                          (:some content)
+                            if (non-nil? content)
+                              conj days $ DayEntry :date
+                                decode-map-as
+                                  .unwrap $ get info :date
+                                  , 'String
+                                , :text $ str content
+                              , days
+                          (:none) days
+                    group-by $ fn (day)
+                      hint-fn $ Fn app.comp.viewer/DayEntry $ -> String
+                      week-key $ :date day
                     map-list-kv $ fn (week days) (WeekGroup :week week :days days)
                     .sort $ fn (a b)
                       hint-fn $ Fn app.comp.viewer/WeekGroup app.comp.viewer/WeekGroup $ -> Number
                       &compare (:week a) (:week b)
                     .map $ fn (group)
                       let
-                          days-info $ :days group
+                          days-info $ .sort-by (:days group)
+                            fn (day)
+                              hint-fn $ Fn app.comp.viewer/DayEntry $ -> String
+                              :date day
                         keyed-element (:week group)
                           div
                             {} $ :style $ {} (:padding-top 8)
                             div $ {}
                               :style $ {} $ :font-family ui/font-fancy
-                              :inner-text $ decode-map-as
-                                .unwrap $ get
-                                    first $ days-info .sort-by $ fn (day)
-                                      decode-map-as
-                                        .unwrap $ get day :date
-                                        , 'String
-                                    , .unwrap
-                                  , :date
-                                , 'String
+                              :inner-text $ :date $ .unwrap (first days-info)
                             keyed->
                               {} $ :style $ .merge ui/row ({})
-                              -> days-info
-                                .sort-by $ fn (info)
-                                  decode-map-as
-                                    .unwrap $ get info :date
-                                    , 'String
-                                map $ fn (info)
-                                  keyed-element
-                                    decode-map-as
-                                      .unwrap $ get info :date
-                                      , 'String
-                                    match
-                                      get info $ decode-map-as
-                                        .unwrap $ get state :tag
-                                        , 'Tag
-                                      (:some content)
-                                        if (non-nil? content)
-                                          div
-                                            {} $ :style $ .merge ui/expand
-                                              {}
-                                                :border-left $ str "|1px solid " $ hsl 0 0 80
-                                                :padding |8px
-                                            <>
-                                              weekday $ decode-map-as
-                                                .unwrap $ get info :date
-                                                , 'String
-                                              {}
-                                                :color $ hsl 0 0 80
-                                                :margin 8
-                                                :font-size 12
-                                                :font-family ui/font-fancy
-                                            <> $ str content
-                                          <> |nothing $ .merge ui/expand $ {}
-                                            :border-left $ str "|1px solid " $ hsl 0 0 80
-                                            :padding |8px
-                                            :color $ hsl 0 0 80
-                                            :font-family ui/font-fancy
-                                      (:none)
-                                        <> |nothing $ .merge ui/expand $ {}
-                                          :border-left $ str "|1px solid " $ hsl 0 0 80
-                                          :padding |8px
-                                          :color $ hsl 0 0 80
-                                          :font-family ui/font-fancy
+                              map days-info $ fn (day)
+                                hint-fn $ Fn app.comp.viewer/DayEntry $ -> respo.schema/ChildPair
+                                keyed-element (:date day)
+                                  div
+                                    {} $ :style $ .merge ui/expand
+                                      {}
+                                        :border-left $ str "|1px solid " $ hsl 0 0 80
+                                        :padding |8px
+                                    <>
+                                      weekday $ :date day
+                                      {}
+                                        :color $ hsl 0 0 80
+                                        :margin 8
+                                        :font-size 12
+                                        :font-family ui/font-fancy
+                                    <> $ :text day
           :examples $ []
           :schema $ quote $ Fn (Map Dynamic Dynamic)
             Map Dynamic $ Map Tag Dynamic
