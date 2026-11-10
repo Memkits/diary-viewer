@@ -6,12 +6,12 @@
     {} (:description |) (:init-fn 'app.main/main!) (:mode :js) (:reload-fn 'app.main/reload!) (:target :browser)
       :feature-policy $ {}
       :modules $ [] |respo.calcit/ |respo-ui.calcit/ |reel.calcit/ |js-ffi/
-      :type-slots $ {} $ :dispatch-op 'app.schema/DispatchOp
+      :type-slots $ {} $ :dispatch-op 'app.schema/Op
   :files $ {}
     'app.comp.container $ %{} 'FileEntry
       :defs $ {}
         'comp-container $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defcomp comp-container (reel)
+          :code $ quote $ defcomp comp-container (reel on-control!)
             let
                 store $ :store reel
                 states $ decode-map-as
@@ -41,7 +41,7 @@
                       (:some page) (str |Else page)
                       (:none) (str |Else nil)
                 if dev?
-                  Option :some $ comp-typed-reel (>> states :reel) reel $ {}
+                  Option :some $ comp-typed-reel (>> states :reel) reel ({}) on-control!
                   Option :none
                 if dev?
                   Option :some $ comp-inspect |store store $ {} (:bottom 0)
@@ -49,6 +49,7 @@
           :examples $ []
           :schema $ quote $ Fn
             reel.typed/State app.schema/Op $ Map Tag Dynamic
+            Fn reel.typed/Control $ -> Unit
             -> respo.schema/Component
         'render-entry $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-entry (title code router)
@@ -464,38 +465,6 @@
           :examples $ []
           :schema $ quote $ Ref
             reel.typed/State app.schema/Op $ Map Tag Dynamic
-        'dispatch! $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn dispatch! (op)
-            when config/dev? $ println |Dispatch: op
-            cond
-                = (enum-definition op) (Option :some schema/Op)
-                dispatch-resolved! $ decode-map-as op 'app.schema/Op
-              (= (enum-definition op) (Option :some typed/Control))
-                dispatch-resolved! $ decode-map-as op 'reel.typed/Control
-              true $ match (typed/decode-control op)
-                (:some control) (dispatch-resolved! control)
-                (:none)
-                  match op
-                    (:states cursor data)
-                      dispatch-resolved! $ app.schema/Op :states
-                        decode-map-as cursor $ List respo.schema/CoordKey
-                        , data
-                    (:records data)
-                      dispatch-resolved! $ app.schema/Op :records $ schema/read-records data
-                    (:router data)
-                      let
-                          router $ decode-map-as data $ Map Tag Dynamic
-                        dispatch-resolved! $ app.schema/Op :navigate
-                          decode-map-as
-                            .unwrap-or (get router :name) :home
-                            , 'Tag
-                          schema/read-year router
-                    (:hydrate-storage data)
-                      dispatch-resolved! $ app.schema/Op :hydrate-storage $ decode-map-as data (Map Tag Dynamic)
-                    _ $ eprintln "|Unknown op:" op
-            , &unit
-          :examples $ []
-          :schema $ quote $ Fn AnyEnum (-> Unit)
         'dispatch-resolved! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch-resolved! (op)
             hint-fn $ Fn app.schema/ResolvedOp (-> Unit) (:features :js-ffi)
@@ -505,11 +474,6 @@
                 typed/record-op updater @*reel action (generate-id!) (host/now-ms)
             , &unit
           :examples $ []
-        'dispatch-wire! $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn dispatch-wire! (op)
-            if (enum? op) (dispatch! op) (raise |Expected-Enum-operation)
-          :examples $ []
-          :schema $ quote $ Fn Dynamic (-> Unit)
         'load-records! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn load-records! (source)
             match (source .parse-json)
@@ -523,7 +487,7 @@
             println "|Running mode:" $ if config/dev? |dev |release
             render-app!
             add-watch! *reel :changes $ fn (r p) (render-app!)
-            listen-devtools-toggle! |k $ fn () $ dispatch-resolved! (reel.typed/Control :toggle)
+            listen-devtools-toggle! |k $ fn () $ on-control! (reel.typed/Control :toggle)
             println "|App started."
             , &unit
           :examples $ []
@@ -533,6 +497,10 @@
             .unwrap $ respo.ffi.browser/query-selector |.app
           :examples $ []
           :schema $ quote respo.dom/DomElement
+        'on-control! $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn on-control! (control) (dispatch-resolved! control)
+          :examples $ []
+          :schema $ quote $ Fn reel.typed/Control (-> Unit)
         'persist-storage! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn persist-storage! ()
             browser/storage-set!
@@ -552,8 +520,11 @@
         'render-app! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-app! ()
             render-with! mount-target
-              fn () $ comp-container @*reel
-              , dispatch-wire!
+              fn () $ comp-container @*reel on-control!
+              fn (op)
+                hint-fn $ Fn app.schema/Op $ -> Unit
+                when config/dev? $ println |Dispatch: op
+                dispatch-resolved! op
           :examples $ []
           :schema $ quote $ Fn (-> Unit)
         'repeat! $ %{} 'CodeEntry (:doc |)
@@ -580,11 +551,6 @@
             js-ffi.shared :as host
     'app.schema $ %{} 'FileEntry
       :defs $ {}
-        'DispatchOp $ %{} 'CodeEntry
-          :doc "|为只接受 definition 路径的入口 dispatch-op 槽声明现有原始 Enum 合同。该代表值不会派发，也不是新的名义业务 Op；真实事件仍由原 updater 与边界解码检查。"
-          :code $ quote $ def DispatchOp (:: :unhandled)
-          :examples $ []
-          :schema $ quote AnyEnum
         'Op $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defenum Op
             :states (List respo.schema/CoordKey) Dynamic
