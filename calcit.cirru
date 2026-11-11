@@ -20,16 +20,17 @@
                 router $ decode-map-as
                   .unwrap $ get store :router
                   Map Tag Dynamic
+                route-name $ get router :name
                 records $ app.schema/read-records $ .unwrap (get store :records)
               div
                 {} $ :style $ .merge ui/global ui/fullscreen ui/column
                 div
                   {} $ :style $ .merge ui/row-middle
                     {} $ :border-bottom $ str "|1px solid " (hsl 0 0 90)
-                  render-entry |Home :home router
-                  render-entry |Editor :editor router
+                  render-entry |Home :home $ = route-name $ Some :home
+                  render-entry |Editor :editor $ = route-name $ Some :editor
                 match
-                  match (get router :name)
+                  match route-name
                     (:some value) (if value value :home)
                     (:none) :home
                   :home $ comp-viewer (>> states :viewer) records
@@ -41,36 +42,33 @@
                       (:some page) (str |Else page)
                       (:none) (str |Else nil)
                 if dev?
-                  Option :some $ comp-typed-reel (>> states :reel) reel ({}) on-control!
-                  Option :none
+                  Some $ comp-typed-reel (>> states :reel) reel ({}) on-control!
+                  , None
                 if dev?
-                  Option :some $ comp-inspect |store store $ {} (:bottom 0)
-                  Option :none
+                  Some $ comp-inspect |store store $ {} (:bottom 0)
+                  , None
           :examples $ []
           :schema $ quote $ Fn
             reel.typed/State app.schema/Op $ Map Tag Dynamic
             Fn reel.typed/Control $ -> Unit
             -> respo.schema/Component
         'render-entry $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn render-entry (title code router)
+          :code $ quote $ defn render-entry (title code active?)
             div
               {}
                 :on-click $ fn (e d!)
-                  d! $ app.schema/Op :navigate code $ Option :none
+                  d! $ app.schema/Op :navigate code None
                 :style $ .merge
                   {} (:padding "|0 8px") (:margin "|0 8px") (:cursor :pointer)
                     :color $ hsl 0 0 70
                     :font-size 16
                     :font-family ui/font-fancy
-                  if
-                    match (get router :name)
-                      (:some route) (= code route)
-                      (:none) false
+                  if active?
                     {} $ :color $ hsl 0 0 30
                     {}
               <> title
           :examples $ []
-          :schema $ quote $ Fn String Tag (Map Tag Dynamic) (-> respo.schema/Element)
+          :schema $ quote $ Fn String Tag Bool (-> respo.schema/Element)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.container
           :require
@@ -124,7 +122,7 @@
                           .unwrap $ get state :text
                           , 'String
                       d! $ app.schema/Op :states cursor nil
-                      d! $ app.schema/Op :navigate :home $ Option :none
+                      d! $ app.schema/Op :navigate :home None
           :examples $ []
           :schema $ quote $ Fn (Map Dynamic Dynamic)
             Map Dynamic $ Map Tag Dynamic
@@ -272,19 +270,19 @@
               {} $ :style ui/row-middle
               a $ {} (:style ui/link) (:inner-text |Group)
                 :on-click $ fn (e d!)
-                  d! $ app.schema/Op :navigate new-page $ Option :none
+                  d! $ app.schema/Op :navigate new-page None
               a $ {} (:style ui/link) (:inner-text "|Group 2021")
                 :on-click $ fn (e d!)
-                  d! $ app.schema/Op :navigate new-page $ Option :some 2021
+                  d! $ app.schema/Op :navigate new-page $ Some 2021
               a $ {} (:style ui/link) (:inner-text "|Group 2020")
                 :on-click $ fn (e d!)
-                  d! $ app.schema/Op :navigate new-page $ Option :some 2020
+                  d! $ app.schema/Op :navigate new-page $ Some 2020
               a $ {} (:style ui/link) (:inner-text "|Group 2019")
                 :on-click $ fn (e d!)
-                  d! $ app.schema/Op :navigate new-page $ Option :some 2019
+                  d! $ app.schema/Op :navigate new-page $ Some 2019
               a $ {} (:style ui/link) (:inner-text "|Group 2018")
                 :on-click $ fn (e d!)
-                  d! $ app.schema/Op :navigate new-page $ Option :some 2018
+                  d! $ app.schema/Op :navigate new-page $ Some 2018
           :examples $ []
           :schema $ quote $ Fn Tag (-> respo.schema/Component)
         'comp-viewer $ %{} 'CodeEntry (:doc |)
@@ -324,9 +322,9 @@
                           :on-click $ fn (e d!)
                             d! $ app.schema/Op :states cursor $ assoc state :tag tag
                   match selected-tag
-                    :food $ Option :some $ comp-filter-buttons :food-analysis
-                    :place $ Option :some $ comp-filter-buttons :place-analysis
-                    _ $ Option :none
+                    :food $ Some $ comp-filter-buttons :food-analysis
+                    :place $ Some $ comp-filter-buttons :place-analysis
+                    _ None
                 keyed->
                   {} $ :style $ .merge ui/expand
                     {} $ :border-top $ str "|1px solid " (hsl 0 0 80)
@@ -464,7 +462,7 @@
           :code $ quote $ defref *reel (typed/new-reel schema/store)
           :examples $ []
           :schema $ quote $ Ref
-            reel.typed/State app.schema/Op $ Map Tag Dynamic
+            typed/State schema/Op $ Map Tag Dynamic
         'dispatch-resolved! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch-resolved! (op)
             hint-fn $ Fn app.schema/ResolvedOp (-> Unit) (:features :js-ffi)
@@ -500,7 +498,7 @@
         'on-control! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn on-control! (control) (dispatch-resolved! control)
           :examples $ []
-          :schema $ quote $ Fn reel.typed/Control (-> Unit)
+          :schema $ quote $ Fn typed/Control (-> Unit)
         'persist-storage! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn persist-storage! ()
             browser/storage-set!
@@ -567,19 +565,21 @@
           :code $ quote $ defn read-records (value)
             decode-map-as value $ Map Dynamic $ Map Tag Dynamic
           :examples $ []
-          :schema $ quote $ Fn Dynamic
+          :schema $ quote $ Fn Input
             -> $ Map Dynamic $ Map Tag Dynamic
+            :generics Input
         'read-year $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn read-year (router)
-            hint-fn $ Fn (Map Tag Dynamic)
-              -> $ Option Number
             match (get router :data)
               (:some value)
                 if (non-nil? value)
-                  Option :some $ decode-map-as value 'Number
-                  Option :none
-              (:none) (Option :none)
+                  Some $ decode-map-as value 'Number
+                  , None
+              (:none) None
           :examples $ []
+          :schema $ quote $ Fn (Map Tag V)
+            -> $ Option Number
+            :generics V
         'store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def store
             {}
