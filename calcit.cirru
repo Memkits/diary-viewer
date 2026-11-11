@@ -388,15 +388,17 @@
             -> respo.schema/Component
         'style-tag $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-tag
-            {}
-              :background-color $ hsl 200 80 85
-              :padding "|0 8px"
-              :margin "|0 8px"
-              :border-radius |4px
-              :color :white
-              :cursor :pointer
+            decode-map-as
+              {}
+                :background-color $ hsl 200 80 85
+                :padding "|0 8px"
+                :margin "|0 8px"
+                :border-radius |4px
+                :color :white
+                :cursor :pointer
+              Map Tag respo-ui.schema/StyleValue
           :examples $ []
-          :schema $ quote $ Map Tag Dynamic
+          :schema $ quote $ Map Tag respo-ui.schema/StyleValue
         'tags $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def tags ([] :food :mood :place :met :highlight :exercise)
           :examples $ []
