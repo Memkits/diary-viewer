@@ -110,8 +110,8 @@
                     hint-fn $ Fn respo.schema/RespoEvent
                       Fn app.schema/Op $ -> Unit
                       -> Unit
-                    d! $ app.schema/Op :states cursor $ assoc state :text
-                      decode-map-as (:value e) 'String
+                    d! $ app.schema/Op :states cursor $ Some
+                      assoc state :text $ decode-map-as (:value e) 'String
                     , &unit
                 div
                   {} $ :style $ {} (:padding "|16px 0")
@@ -121,7 +121,7 @@
                         parse-cirru-edn $ decode-map-as
                           .unwrap $ get state :text
                           , 'String
-                      d! $ app.schema/Op :states cursor nil
+                      d! $ app.schema/Op :states cursor None
                       d! $ app.schema/Op :navigate :home None
           :examples $ []
           :schema $ quote $ Fn (Map Dynamic Dynamic)
@@ -320,7 +320,7 @@
                             {}
                           :inner-text tag
                           :on-click $ fn (e d!)
-                            d! $ app.schema/Op :states cursor $ assoc state :tag tag
+                            d! $ app.schema/Op :states cursor $ Some (assoc state :tag tag)
                   match selected-tag
                     :food $ Some $ comp-filter-buttons :food-analysis
                     :place $ Some $ comp-filter-buttons :place-analysis
@@ -333,8 +333,8 @@
                       fn (entry) entry.:value
                     .foldl ([])
                       fn (days info)
-                        hint-fn $ Fn (List app.comp.viewer/DayEntry) (Map Tag Dynamic)
-                          -> $ List app.comp.viewer/DayEntry
+                        hint-fn $ Fn (List DayEntry) (Map Tag Dynamic)
+                          -> $ List DayEntry
                         match (get info selected-tag)
                           (:some content)
                             if (non-nil? content)
@@ -346,17 +346,17 @@
                               , days
                           (:none) days
                     group-by $ fn (day)
-                      hint-fn $ Fn app.comp.viewer/DayEntry $ -> String
+                      hint-fn $ Fn DayEntry $ -> String
                       week-key $ :date day
                     map-list-kv $ fn (week days) (WeekGroup :week week :days days)
                     .sort $ fn (a b)
-                      hint-fn $ Fn app.comp.viewer/WeekGroup app.comp.viewer/WeekGroup $ -> Number
+                      hint-fn $ Fn WeekGroup WeekGroup $ -> Number
                       &compare (:week a) (:week b)
                     .map $ fn (group)
                       let
                           days-info $ .sort-by (:days group)
                             fn (day)
-                              hint-fn $ Fn app.comp.viewer/DayEntry $ -> String
+                              hint-fn $ Fn DayEntry $ -> String
                               :date day
                         keyed-element (:week group)
                           div
@@ -367,7 +367,7 @@
                             keyed->
                               {} $ :style $ .merge ui/row ({})
                               map days-info $ fn (day)
-                                hint-fn $ Fn app.comp.viewer/DayEntry $ -> respo.schema/ChildPair
+                                hint-fn $ Fn DayEntry $ -> respo.schema/ChildPair
                                 keyed-element (:date day)
                                   div
                                     {} $ :style $ .merge ui/expand
@@ -467,7 +467,7 @@
             typed/State schema/Op $ Map Tag Dynamic
         'dispatch-resolved! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch-resolved! (op)
-            hint-fn $ Fn app.schema/ResolvedOp (-> Unit) (:features :js-ffi)
+            hint-fn $ Fn schema/ResolvedOp (-> Unit) (:features :js-ffi)
             reset! *reel $ match op
               (reel.typed/Control control) (typed/apply-control updater @*reel control)
               (app.schema/Op action)
@@ -522,7 +522,7 @@
             render-with! mount-target
               fn () $ comp-container @*reel on-control!
               fn (op)
-                hint-fn $ Fn app.schema/Op $ -> Unit
+                hint-fn $ Fn schema/Op $ -> Unit
                 when config/dev? $ println |Dispatch: op
                 dispatch-resolved! op
           :examples $ []
@@ -553,7 +553,8 @@
       :defs $ {}
         'Op $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defenum Op
-            :states (List respo.schema/CoordKey) Dynamic
+            :states (List respo.schema/CoordKey)
+              Option $ Map Tag Dynamic
             :records $ Map Dynamic $ Map Tag Dynamic
             :navigate Tag $ Option Number
             :hydrate-storage $ Map Tag Dynamic
@@ -598,7 +599,11 @@
           :code $ quote $ defn updater (store op op-id op-time)
             match op
               (:states cursor s)
-                decode-map-as (update-states store cursor s) (Map Tag Dynamic)
+                match s
+                  (:some state)
+                    decode-map-as (update-states store cursor state) (Map Tag Dynamic)
+                  (:none)
+                    decode-map-as (update-states store cursor nil) (Map Tag Dynamic)
               (:records op-data) (assoc store :records op-data)
               (:navigate name year)
                 assoc store :router $ match year

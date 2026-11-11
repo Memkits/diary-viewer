@@ -14,7 +14,7 @@ import { Op, read_year } from '../js-out/app.schema.mjs';
 import { component_$q_, component_tree, render_node_value } from '../js-out/respo.util.detect.mjs';
 import { make_string } from '../js-out/respo.render.html.mjs';
 
-const t = c.init_tags(['date', 'time', 'food', 'place', 'name', 'home', 'data', 'records', 'router', 'states', 'event', 'children', 'click', 'store', 'node', 'tag', 'mood']);
+const t = c.init_tags(['date', 'time', 'food', 'place', 'name', 'home', 'data', 'records', 'router', 'states', 'event', 'children', 'click', 'store', 'node', 'tag', 'mood', 'text']);
 const map = c._$n__$M_;
 const field = (value, key) => c.option_$o_unwrap(c.get(value, key));
 const nth = (value, index) => c.option_$o_unwrap(c.nth(value, index));
@@ -85,7 +85,11 @@ test('Analyze round-trips the editor text and dispatches Enum operations', () =>
   let store = map(t.records, records, t.states, map(), t.router, map(t.name, t.home));
   const handler = clickHandler(comp_editor(map(), records), 'Analyze');
   assert.equal(typeof handler, 'function');
+  const draft = map(t.text, 'draft');
+  store = updater(store, c._PCT__$o__$o_(Op, t.states, c._$L_(), c.Some(draft)), 'draft', 0);
+  assert.ok(c._$n__$e_(field(field(store, t.states), t.data), draft));
   handler(null, (op) => { store = updater(store, op, 'edit', 1); });
+  assert.equal(field(field(store, t.states), t.data), null);
   assert.ok(c._$n__$e_(field(store, t.records), records));
   assert.equal(field(field(store, t.router), t.name), t.home);
 });
