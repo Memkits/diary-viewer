@@ -143,8 +143,7 @@
                     fn (entry) entry.:value
                   filter $ fn (day-info)
                     match year
-                      (:some selected)
-                        = selected $ get-year $ .unwrap-or (get day-info :time) 0
+                      (:some selected) (matches-record-year? day-info selected)
                       (:none) true
                   map $ fn (x)
                     decode-map-as
@@ -192,7 +191,7 @@
             respo-ui.core :as ui
             respo.core :refer $ defcomp keyed-> keyed-element <> div
             app.util.string :refer $ split-words
-            app.util :refer $ get-year
+            app.util :refer $ matches-record-year?
     'app.comp.place-analysis $ %{} 'FileEntry
       :defs $ {} $ 'comp-place-analysis
         %{} 'CodeEntry (:doc |)
@@ -203,8 +202,7 @@
                     fn (entry) entry.:value
                   filter $ fn (day-info)
                     match year
-                      (:some selected)
-                        = selected $ get-year $ .unwrap-or (get day-info :time) 0
+                      (:some selected) (matches-record-year? day-info selected)
                       (:none) true
                   map $ fn (x)
                     decode-map-as
@@ -252,7 +250,7 @@
             respo-ui.core :as ui
             respo.core :refer $ defcomp keyed-> keyed-element <> div
             app.util.string :refer $ split-words-comma
-            app.util :refer $ get-year
+            app.util :refer $ matches-record-year?
     'app.comp.viewer $ %{} 'FileEntry
       :defs $ {}
         'DayEntry $ %{} 'CodeEntry (:doc |)
@@ -491,7 +489,7 @@
             println "|App started."
             , &unit
           :examples $ []
-          :schema $ quote $ Fn (-> Unit)
+          :schema $ quote $ Fn (-> Unit) (:features :io :state)
         'mount-target $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def mount-target
             .unwrap $ respo.ffi.browser/query-selector |.app
@@ -508,7 +506,7 @@
                 , .unwrap
               format-cirru-edn $ :store @*reel
           :examples $ []
-          :schema $ quote $ Fn (-> Unit)
+          :schema $ quote $ Fn (-> Unit) (:features :state)
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! () (remove-watch! *reel :changes) (clear-cache!)
             add-watch! *reel :changes $ fn (reel prev) (render-app!)
@@ -516,7 +514,7 @@
             println |Code-updated.
             , &unit
           :examples $ []
-          :schema $ quote $ Fn (-> Unit)
+          :schema $ quote $ Fn (-> Unit) (:features :io :state)
         'render-app! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-app! ()
             render-with! mount-target
@@ -526,7 +524,7 @@
                 when config/dev? $ println |Dispatch: op
                 dispatch-resolved! op
           :examples $ []
-          :schema $ quote $ Fn (-> Unit)
+          :schema $ quote $ Fn (-> Unit) (:features :io :state)
         'repeat! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn repeat! (duration cb)
             browser/set-timeout!
@@ -619,14 +617,32 @@
         :code $ quote $ ns app.updater
           :require $ respo.cursor :refer $ update-states
     'app.util $ %{} 'FileEntry
-      :defs $ {} $ 'get-year
-        %{} 'CodeEntry (:doc |)
+      :defs $ {}
+        'RecordTime $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defunion RecordTime Number String Bool
+          :examples $ []
+          :schema $ quote UnionDef
+        'get-year $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn get-year (x)
             let
                 d $ js-cast (new js/Date x) 'app.js-adapter/DateYearHost
               d .get-full-year
           :examples $ []
-          :schema $ quote $ Fn Dynamic (-> Number) (:features :js-ffi)
+          :schema $ quote $ Fn RecordTime (-> Number) (:features :js-ffi)
+        'matches-record-year? $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn matches-record-year? (record year)
+            match (get record :time)
+              (:some raw)
+                if (nil? raw)
+                  = year $ get-year 0
+                  match (try-decode-map-as raw RecordTime)
+                    (:ok time)
+                      = year $ get-year time
+                    (:err _) false
+              (:none)
+                = year $ get-year 0
+          :examples $ []
+          :schema $ quote $ Fn (Map Tag Value) Number (-> Bool) (:generics Value) (:features :js-ffi)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.util
           :require $ app.js-adapter :refer $ DateYearHost
