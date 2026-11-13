@@ -295,10 +295,8 @@
                       if value value $ {} $ :tag :food
                     (:none)
                       {} $ :tag :food
-                  Map Tag Dynamic
-                selected-tag $ decode-map-as
-                  .unwrap $ get state :tag
-                  , 'Tag
+                  Map Tag Tag
+                selected-tag $ .unwrap $ get state :tag
               div
                 {} $ :style $ .merge ui/expand ui/column
                   {} $ :padding 16
