@@ -96,15 +96,13 @@
                       if value value $ {} $ :text (format-cirru-edn records)
                     (:none)
                       {} $ :text $ format-cirru-edn records
-                  Map Tag Dynamic
+                  Map Tag String
               div
                 {} $ :style $ .merge ui/expand
                   {} $ :padding 16
                 textarea $ {}
                   :style $ .merge ui/textarea $ {} (:width |100%) (:height |80%) (:font-family ui/font-code) (:font-size 12) (:padding-bottom 200)
-                  :value $ decode-map-as
-                    .unwrap $ get state :text
-                    , 'String
+                  :value $ .unwrap $ get state :text
                   :placeholder "|EDN piece of diaries storage, keys are dates"
                   :on-input $ fn (e d!)
                     hint-fn $ Fn respo.schema/RespoEvent
@@ -118,9 +116,7 @@
                   button $ {} (:style ui/button) (:inner-text |Analyze)
                     :on-click $ fn (e d!)
                       d! $ app.schema/Op :records $ app.schema/read-records
-                        parse-cirru-edn $ decode-map-as
-                          .unwrap $ get state :text
-                          , 'String
+                        parse-cirru-edn $ .unwrap $ get state :text
                       d! $ app.schema/Op :states cursor None
                       d! $ app.schema/Op :navigate :home None
           :examples $ []
