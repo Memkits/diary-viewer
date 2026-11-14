@@ -16,7 +16,7 @@
                 store $ :store reel
                 states $ decode-map-as
                   .unwrap $ get store :states
-                  Map Dynamic Dynamic
+                  Map respo.schema/CoordKey Dynamic
                 router $ decode-map-as
                   .unwrap $ get store :router
                   Map Tag Dynamic
@@ -129,7 +129,7 @@
                       d! $ app.schema/Op :states cursor None
                       d! $ app.schema/Op :navigate :home None
           :examples $ []
-          :schema $ quote $ Fn (Map Dynamic Dynamic)
+          :schema $ quote $ Fn respo.schema/States
             Map Dynamic $ Map Tag Dynamic
             -> respo.schema/Component
       :ns $ %{} 'NsEntry (:doc |)
@@ -378,7 +378,7 @@
                                         :font-family ui/font-fancy
                                     <> $ :text day
           :examples $ []
-          :schema $ quote $ Fn (Map Dynamic Dynamic)
+          :schema $ quote $ Fn respo.schema/States
             List $ Map Tag Dynamic
             -> respo.schema/Component
         'style-tag $ %{} 'CodeEntry (:doc |)
