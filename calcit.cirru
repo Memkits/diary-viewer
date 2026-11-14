@@ -33,10 +33,10 @@
                   match route-name
                     (:some value) (if value value :home)
                     (:none) :home
-                  :home $ comp-viewer (>> states :viewer) records
+                  :home $ comp-viewer (>> states :viewer) (record-values records)
                   :editor $ comp-editor (>> states :editor) records
-                  :food-analysis $ comp-food-analysis records $ app.schema/read-year router
-                  :place-analysis $ comp-place-analysis records $ app.schema/read-year router
+                  :food-analysis $ comp-food-analysis (record-values records) (app.schema/read-year router)
+                  :place-analysis $ comp-place-analysis (record-values records) (app.schema/read-year router)
                   _ $ div ({})
                     <> $ match (get store :page)
                       (:some page) (str |Else page)
@@ -52,6 +52,15 @@
             reel.typed/State app.schema/Op $ Map Tag Dynamic
             Fn reel.typed/Control $ -> Unit
             -> respo.schema/Component
+        'record-values $ %{} 'CodeEntry
+          :doc "|Project the stored records in their existing traversal order for views that do not use record IDs."
+          :code $ quote $ defn record-values (records)
+            map (map-entries records)
+              fn (entry) entry.:value
+          :examples $ []
+          :schema $ quote $ Fn (Map K V)
+            -> $ List V
+            :generics K V
         'render-entry $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-entry (title code active?)
             div
@@ -134,9 +143,7 @@
         %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-food-analysis (records year)
             let
-                foods $ ->
-                  map (map-entries records)
-                    fn (entry) entry.:value
+                foods $ -> records
                   filter $ fn (day-info)
                     match year
                       (:some selected) (matches-record-year? day-info selected)
@@ -177,7 +184,7 @@
                         <> entry.:key $ {} (:font-size 12) (:white-space :nowrap)
           :examples $ []
           :schema $ quote $ Fn
-            Map Dynamic $ Map Tag Dynamic
+            List $ Map Tag Dynamic
             Option Number
             -> respo.schema/Component
       :ns $ %{} 'NsEntry (:doc |)
@@ -193,9 +200,7 @@
         %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-place-analysis (records year)
             let
-                records $ ->
-                  map (map-entries records)
-                    fn (entry) entry.:value
+                records $ -> records
                   filter $ fn (day-info)
                     match year
                       (:some selected) (matches-record-year? day-info selected)
@@ -236,7 +241,7 @@
                         <> entry.:key $ {} (:font-size 12) (:white-space :nowrap)
           :examples $ []
           :schema $ quote $ Fn
-            Map Dynamic $ Map Tag Dynamic
+            List $ Map Tag Dynamic
             Option Number
             -> respo.schema/Component
       :ns $ %{} 'NsEntry (:doc |)
@@ -320,9 +325,7 @@
                 keyed->
                   {} $ :style $ .merge ui/expand
                     {} $ :border-top $ str "|1px solid " (hsl 0 0 80)
-                  ->
-                    map (map-entries records)
-                      fn (entry) entry.:value
+                  -> records
                     .foldl ([])
                       fn (days info)
                         hint-fn $ Fn (List DayEntry) (Map Tag Dynamic)
@@ -376,7 +379,7 @@
                                     <> $ :text day
           :examples $ []
           :schema $ quote $ Fn (Map Dynamic Dynamic)
-            Map Dynamic $ Map Tag Dynamic
+            List $ Map Tag Dynamic
             -> respo.schema/Component
         'style-tag $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-tag
