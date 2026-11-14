@@ -52,6 +52,7 @@
             reel.typed/State app.schema/Op $ Map Tag Dynamic
             Fn reel.typed/Control $ -> Unit
             -> respo.schema/Component
+            :features :state
         'record-values $ %{} 'CodeEntry
           :doc "|Project the stored records in their existing traversal order for views that do not use record IDs."
           :code $ quote $ defn record-values (records)
@@ -469,6 +470,7 @@
                 typed/record-op updater @*reel action (generate-id!) (host/now-ms)
             , &unit
           :examples $ []
+          :schema $ quote $ Fn schema/ResolvedOp (-> Unit) (:features :js-ffi :state)
         'load-records! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn load-records! (source)
             match (source .parse-json)
@@ -476,7 +478,7 @@
                 dispatch-resolved! $ app.schema/Op :records $ schema/read-records data
               (:err message) (raise message)
           :examples $ []
-          :schema $ quote $ Fn String (-> Unit)
+          :schema $ quote $ Fn String (-> Unit) (:features :state)
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! ()
             println "|Running mode:" $ if config/dev? |dev |release
@@ -495,7 +497,7 @@
         'on-control! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn on-control! (control) (dispatch-resolved! control)
           :examples $ []
-          :schema $ quote $ Fn typed/Control (-> Unit)
+          :schema $ quote $ Fn typed/Control (-> Unit) (:features :state)
         'persist-storage! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn persist-storage! ()
             browser/storage-set!
