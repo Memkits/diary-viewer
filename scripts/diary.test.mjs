@@ -5,6 +5,7 @@ import * as c from '../js-out/calcit.core.mjs';
 import { split_words, split_words_comma } from '../js-out/app.util.string.mjs';
 import { week_key, weekday } from '../js-out/app.js-adapter.mjs';
 import { get_year } from '../js-out/app.util.mjs';
+import { record_values } from '../js-out/app.comp.container.mjs';
 import { comp_viewer } from '../js-out/app.comp.viewer.mjs';
 import { comp_editor } from '../js-out/app.comp.editor.mjs';
 import { comp_food_analysis } from '../js-out/app.comp.food-analysis.mjs';
@@ -50,33 +51,34 @@ test('word splitting and Luxon week grouping retain their original meaning', () 
 });
 
 test('viewer and food/place analysis render records and respect the selected year', () => {
-  const html = make_string(comp_viewer(map(), records));
+  const values = record_values(records);
+  const html = make_string(comp_viewer(map(), values));
   for (const text of ['2021-01-01', 'rice, noodle', '2020-01-01', 'soup']) assert.ok(html.includes(text));
   assert.ok(html.includes('>Group 2021<'));
-  const mood = make_string(comp_viewer(map(t.data, map(t.tag, t.mood)), records));
+  const mood = make_string(comp_viewer(map(t.data, map(t.tag, t.mood)), values));
   assert.ok(!mood.includes('>Group 2021<'));
   const sameWeek = map(
     'late', map(t.date, '2021-01-08', t.food, 0),
     'early', map(t.date, '2021-01-07', t.food, false),
     'unselected', map(t.place, 'omit this entry'),
   );
-  const ordered = make_string(comp_viewer(map(), sameWeek));
+  const ordered = make_string(comp_viewer(map(), record_values(sameWeek)));
   assert.ok(ordered.includes('>2021-01-07<'));
   assert.ok(ordered.includes('>false<') && ordered.includes('>0<'));
   assert.ok(ordered.indexOf('>false<') < ordered.indexOf('>0<'));
   assert.ok(!ordered.includes('omit this entry'));
   let router;
-  const group = clickHandler(comp_viewer(map(), records), 'Group 2021');
+  const group = clickHandler(comp_viewer(map(), values), 'Group 2021');
   assert.equal(typeof group, 'function');
   group(null, operation => {
     assert.equal(c.option_$o_unwrap(c.enum_definition(operation)), Op);
     router = field(updater(map(t.router, map(t.name, t.home)), operation, 'navigation', 0), t.router);
   });
   assert.equal(field(router, t.data), 2021);
-  const food = make_string(comp_food_analysis(records, read_year(router)));
+  const food = make_string(comp_food_analysis(values, read_year(router)));
   assert.ok(food.includes('rice') && food.includes('noodle'));
   assert.ok(!food.includes('soup'));
-  const place = make_string(comp_place_analysis(records, read_year(router)));
+  const place = make_string(comp_place_analysis(values, read_year(router)));
   assert.ok(place.includes('City Park') && place.includes('Train Station'));
   assert.ok(!place.includes('Old Town'));
 });
