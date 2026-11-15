@@ -150,10 +150,9 @@
                       (:some selected) (matches-record-year? day-info selected)
                       (:none) true
                   map $ fn (x)
-                    decode-map-as
-                        get x :food
-                        , .unwrap-or |
-                      , 'String
+                    match (get x :food)
+                      (:some value) (decode-map-as value String)
+                      (:none) |
                   mapcat $ fn (chunk)
                     hint-fn $ Fn String $ -> (List String)
                     split-words ([]) | chunk
@@ -185,9 +184,10 @@
                         <> entry.:key $ {} (:font-size 12) (:white-space :nowrap)
           :examples $ []
           :schema $ quote $ Fn
-            List $ Map Tag Dynamic
+            List $ Map Tag V
             Option Number
             -> respo.schema/Component
+            :generics V
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.food-analysis
           :require
@@ -207,10 +207,9 @@
                       (:some selected) (matches-record-year? day-info selected)
                       (:none) true
                   map $ fn (x)
-                    decode-map-as
-                        get x :place
-                        , .unwrap-or |
-                      , 'String
+                    match (get x :place)
+                      (:some value) (decode-map-as value String)
+                      (:none) |
                   mapcat $ fn (chunk)
                     hint-fn $ Fn String $ -> (List String)
                     split-words-comma ([]) | chunk
@@ -242,9 +241,10 @@
                         <> entry.:key $ {} (:font-size 12) (:white-space :nowrap)
           :examples $ []
           :schema $ quote $ Fn
-            List $ Map Tag Dynamic
+            List $ Map Tag V
             Option Number
             -> respo.schema/Component
+            :generics V
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.place-analysis
           :require
