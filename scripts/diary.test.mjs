@@ -83,6 +83,15 @@ test('viewer and food/place analysis render records and respect the selected yea
   assert.ok(!place.includes('Old Town'));
 });
 
+test('analysis treats missing fields as empty and rejects non-text values', () => {
+  const allYears = read_year(map());
+  for (const [render, fieldName] of [[comp_food_analysis, t.food], [comp_place_analysis, t.place]]) {
+    assert.doesNotThrow(() => make_string(render(c._$L_(map()), allYears)));
+    assert.throws(() => render(c._$L_(map(fieldName, 42)), allYears));
+    assert.throws(() => render(c._$L_(map(fieldName, null)), allYears));
+  }
+});
+
 test('Analyze round-trips the editor text and dispatches Enum operations', () => {
   let store = map(t.records, records, t.states, map(), t.router, map(t.name, t.home));
   const handler = clickHandler(comp_editor(map(), records), 'Analyze');
