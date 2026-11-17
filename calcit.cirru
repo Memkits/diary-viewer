@@ -50,9 +50,9 @@
           :examples $ []
           :schema $ quote $ Fn
             reel.typed/State app.schema/Op $ Map Tag Dynamic
-            Fn reel.typed/Control $ -> Unit
+            Fn reel.typed/Control (-> Unit) (:features :state)
             -> respo.schema/Component
-            :features :state
+            :features :js-ffi :state
         'record-values $ %{} 'CodeEntry
           :doc "|Project the stored records in their existing traversal order for views that do not use record IDs."
           :code $ quote $ defn record-values (records)
