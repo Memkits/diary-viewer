@@ -130,7 +130,7 @@
                       d! $ app.schema/Op :states cursor None
                       d! $ app.schema/Op :navigate :home None
           :examples $ []
-          :schema $ quote $ Fn respo.schema/States
+          :schema $ quote $ Fn (Map Dynamic Dynamic)
             Map Dynamic $ Map Tag Dynamic
             -> respo.schema/Component
       :ns $ %{} 'NsEntry (:doc |)
@@ -379,7 +379,7 @@
                                         :font-family ui/font-fancy
                                     <> $ :text day
           :examples $ []
-          :schema $ quote $ Fn respo.schema/States
+          :schema $ quote $ Fn (Map Dynamic Dynamic)
             List $ Map Tag Dynamic
             -> respo.schema/Component
         'style-tag $ %{} 'CodeEntry (:doc |)
