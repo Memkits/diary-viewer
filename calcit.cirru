@@ -130,9 +130,10 @@
                       d! $ app.schema/Op :states cursor None
                       d! $ app.schema/Op :navigate :home None
           :examples $ []
-          :schema $ quote $ Fn (Map Dynamic Dynamic)
-            Map Dynamic $ Map Tag Dynamic
+          :schema $ quote $ Fn (Map Dynamic StateValue)
+            Map RecordKey $ Map Tag RecordValue
             -> respo.schema/Component
+            :generics StateValue RecordKey RecordValue
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns app.comp.editor
           :require
@@ -329,7 +330,7 @@
                   -> records
                     .foldl ([])
                       fn (days info)
-                        hint-fn $ Fn (List DayEntry) (Map Tag Dynamic)
+                        hint-fn $ Fn (List DayEntry) (Map Tag RecordValue)
                           -> $ List DayEntry
                         match (get info selected-tag)
                           (:some content)
@@ -379,9 +380,10 @@
                                         :font-family ui/font-fancy
                                     <> $ :text day
           :examples $ []
-          :schema $ quote $ Fn (Map Dynamic Dynamic)
-            List $ Map Tag Dynamic
+          :schema $ quote $ Fn (Map Dynamic StateValue)
+            List $ Map Tag RecordValue
             -> respo.schema/Component
+            :generics StateValue RecordValue
         'style-tag $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-tag
             decode-map-as
