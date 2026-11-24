@@ -124,3 +124,12 @@ test('manual JSON import and storage preserve the diary-viewer key without readi
   const persisted = c.parse_cirru_edn(saved.get('diary-viewer'));
   assert.equal(c.count(field(persisted, t.records)), 1);
 });
+test('legacy nil and false component state use the existing defaults', () => {
+  const values = record_values(records);
+  const editorDefault = make_string(comp_editor(map(), records));
+  const viewerDefault = make_string(comp_viewer(map(), values));
+  for (const value of [null, false]) {
+    assert.equal(make_string(comp_editor(map(t.data, value), records)), editorDefault);
+    assert.equal(make_string(comp_viewer(map(t.data, value), values)), viewerDefault);
+  }
+});

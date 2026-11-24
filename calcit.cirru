@@ -31,7 +31,10 @@
                   render-entry |Editor :editor $ = route-name $ Some :editor
                 match
                   match route-name
-                    (:some value) (if value value :home)
+                    (:some value)
+                      if
+                        or (nil? value) (identical? false value)
+                        , :home value
                     (:none) :home
                   :home $ comp-viewer (>> states :viewer) (record-values records)
                   :editor $ comp-editor (>> states :editor) records
@@ -103,7 +106,10 @@
                 state $ decode-map-as
                   match (get states :data)
                     (:some value)
-                      if value value $ {} $ :text (format-cirru-edn records)
+                      if
+                        or (nil? value) (identical? false value)
+                        {} $ :text $ format-cirru-edn records
+                        , value
                     (:none)
                       {} $ :text $ format-cirru-edn records
                   Map Tag String
@@ -295,7 +301,10 @@
                 state $ decode-map-as
                   match (get states :data)
                     (:some value)
-                      if value value $ {} $ :tag :food
+                      if
+                        or (nil? value) (identical? false value)
+                        {} $ :tag :food
+                        , value
                     (:none)
                       {} $ :tag :food
                   Map Tag Tag
